@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jschaf/pggen/internal/ast"
-	"github.com/jschaf/pggen/internal/pg"
+	"github.com/robbert229/pggen/internal/ast"
+	"github.com/robbert229/pggen/internal/pg"
 )
 
 const defaultTimeout = 3 * time.Second

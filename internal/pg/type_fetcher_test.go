@@ -4,9 +4,9 @@ import (
 	"context"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/jschaf/pggen/internal/pg/pgoid"
-	"github.com/jschaf/pggen/internal/pgtest"
-	"github.com/jschaf/pggen/internal/texts"
+	"github.com/robbert229/pggen/internal/pg/pgoid"
+	"github.com/robbert229/pggen/internal/pgtest"
+	"github.com/robbert229/pggen/internal/texts"
 	"sort"
 	"testing"
 )

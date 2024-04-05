@@ -3,7 +3,7 @@ package scanner
 import (
 	"bytes"
 	"fmt"
-	"github.com/jschaf/pggen/internal/token"
+	"github.com/robbert229/pggen/internal/token"
 	gotok "go/token"
 	"unicode"
 	"unicode/utf8"

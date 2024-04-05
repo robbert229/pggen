@@ -3,9 +3,9 @@ package composite
 import (
 	"context"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/jschaf/pggen/internal/difftest"
-	"github.com/jschaf/pggen/internal/pgtest"
-	"github.com/jschaf/pggen/internal/ptrs"
+	"github.com/robbert229/pggen/internal/difftest"
+	"github.com/robbert229/pggen/internal/pgtest"
+	"github.com/robbert229/pggen/internal/ptrs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"

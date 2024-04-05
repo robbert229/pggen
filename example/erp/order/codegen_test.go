@@ -1,8 +1,8 @@
 package order
 
 import (
-	"github.com/jschaf/pggen"
-	"github.com/jschaf/pggen/internal/pgtest"
+	"github.com/robbert229/pggen"
+	"github.com/robbert229/pggen/internal/pgtest"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"

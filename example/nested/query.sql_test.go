@@ -2,7 +2,7 @@ package nested
 
 import (
 	"context"
-	"github.com/jschaf/pggen/internal/pgtest"
+	"github.com/robbert229/pggen/internal/pgtest"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

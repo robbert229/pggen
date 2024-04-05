@@ -3,8 +3,8 @@ package golang
 import (
 	_ "embed"
 	"fmt"
-	"github.com/jschaf/pggen/internal/casing"
-	"github.com/jschaf/pggen/internal/codegen"
+	"github.com/robbert229/pggen/internal/casing"
+	"github.com/robbert229/pggen/internal/codegen"
 	"path/filepath"
 	"sort"
 	"text/template"

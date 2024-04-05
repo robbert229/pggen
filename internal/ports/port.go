@@ -1,7 +1,7 @@
 package ports
 
 import (
-	"github.com/jschaf/pggen/internal/errs"
+	"github.com/robbert229/pggen/internal/errs"
 	"net"
 )
 

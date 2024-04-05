@@ -2,12 +2,12 @@ package function
 
 import (
 	"context"
-	"github.com/jschaf/pggen/internal/difftest"
-	"github.com/jschaf/pggen/internal/ptrs"
+	"github.com/robbert229/pggen/internal/difftest"
+	"github.com/robbert229/pggen/internal/ptrs"
 	"github.com/stretchr/testify/require"
 	"testing"
 
-	"github.com/jschaf/pggen/internal/pgtest"
+	"github.com/robbert229/pggen/internal/pgtest"
 )
 
 func TestNewQuerier_OutParams(t *testing.T) {

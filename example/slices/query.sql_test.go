@@ -2,8 +2,8 @@ package slices
 
 import (
 	"context"
-	"github.com/jschaf/pggen/internal/difftest"
-	"github.com/jschaf/pggen/internal/pgtest"
+	"github.com/robbert229/pggen/internal/difftest"
+	"github.com/robbert229/pggen/internal/pgtest"
 	"github.com/stretchr/testify/require"
 	"testing"
 	"time"

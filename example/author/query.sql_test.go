@@ -3,12 +3,12 @@ package author
 import (
 	"context"
 	"errors"
-	"github.com/jschaf/pggen/internal/ptrs"
+	"github.com/robbert229/pggen/internal/ptrs"
 	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jschaf/pggen/internal/pgtest"
+	"github.com/robbert229/pggen/internal/pgtest"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -1,8 +1,8 @@
 package pginfer
 
 import (
-	"github.com/jschaf/pggen/internal/ast"
-	"github.com/jschaf/pggen/internal/pg"
+	"github.com/robbert229/pggen/internal/ast"
+	"github.com/robbert229/pggen/internal/pg"
 	"strings"
 	"unicode"
 )
