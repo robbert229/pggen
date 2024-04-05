@@ -1,7 +1,6 @@
 package pg
 
 import (
-	"github.com/jackc/pgx/v5/pgtype"
 	"sync"
 )
 
@@ -23,13 +22,11 @@ func newTypeCache() *typeCache {
 }
 
 func lookup() {
-	!!!fixme
-	m := pgtype.NewMap() // !!!
-	m.TypeForValue()     // looks up pg type for go type
-	m.FormatCodeForOID()
-	m.TypeForOID()
-	m.TypeForName()
-
+	// m := pgtype.NewMap() // !!!
+	// m.TypeForValue()     // looks up pg type for go type
+	// m.FormatCodeForOID()
+	// m.TypeForOID()
+	// m.TypeForName()
 }
 
 // getOIDs returns the cached OIDS (with the type) and uncached OIDs.
