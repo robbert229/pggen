@@ -2,11 +2,12 @@ package golang
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/robbert229/pggen/internal/ast"
 	"github.com/robbert229/pggen/internal/codegen/golang/gotype"
 	"github.com/robbert229/pggen/internal/pginfer"
-	"strconv"
-	"strings"
 )
 
 // TemplatedPackage is all templated files in a pggen invocation. The templated
@@ -201,28 +202,16 @@ func (tq TemplatedQuery) isInlineParams() bool {
 	return len(tq.Inputs) <= tq.InlineParamCount
 }
 
-// EmitPlanScan emits the variable that hold the pgtype.ScanPlan for a query
-// output.
-func (tq TemplatedQuery) EmitPlanScan(idx int, out TemplatedColumn) (string, error) {
-	switch tq.ResultKind {
-	case ast.ResultKindExec:
-		return "", fmt.Errorf("cannot EmitPlanScanArgs for :exec query %s", tq.Name)
-	case ast.ResultKindMany, ast.ResultKindOne:
-		break // okay
-	default:
-		return "", fmt.Errorf("unhandled EmitPlanScanArgs type: %s", tq.ResultKind)
-	}
-	return fmt.Sprintf("plan%d := planScan(pgtype.TextCodec{}, fds[%d], (*%s)(nil))", idx, idx, out.Type.BaseName()), nil
-}
-
 // EmitScanColumn emits scan call for a single TemplatedColumn.
 func (tq TemplatedQuery) EmitScanColumn(idx int, out TemplatedColumn) (string, error) {
 	sb := &strings.Builder{}
-	_, _ = fmt.Fprintf(sb, "if err := plan%d.Scan(vals[%d], &item); err != nil {\n", idx, idx)
-	sb.WriteString("\t\t\t")
-	_, _ = fmt.Fprintf(sb, `return item, fmt.Errorf("scan %s.%s: %%w", err)`, tq.Name, out.PgName)
-	sb.WriteString("\n")
-	sb.WriteString("\t\t}")
+
+	if len(tq.Outputs) == 1 {
+		_, _ = fmt.Fprintf(sb, "&item,")
+		return sb.String(), nil
+	}
+
+	_, _ = fmt.Fprintf(sb, "&item.%s, // '%s', '%s', '%s', '%s', '%s'", out.UpperName, out.PgName, out.UpperName, out.QualType, out.Type.Import(), out.Type.BaseName())
 	return sb.String(), nil
 }
 
@@ -381,13 +370,18 @@ func (tq TemplatedQuery) EmitZeroResult() (string, error) {
 			return "nil", nil // nil pointer
 		}
 		switch typ {
-		case "int", "int32", "int64", "float32", "float64":
+		case "int", "int32", "int64", "float32", "float64", "uint32":
 			return "0", nil
 		case "string":
 			return `""`, nil
 		case "bool":
 			return "false", nil
 		default:
+			if it, ok := tq.Outputs[0].Type.(*gotype.ImportType); ok {
+				if _, ok := it.Type.(*gotype.EnumType); ok {
+					return typ + `("")`, nil
+				}
+			}
 			return typ + "{}", nil // won't work for type Foo int
 		}
 	default:

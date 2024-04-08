@@ -1,12 +1,13 @@
 package golang
 
 import (
-	"github.com/robbert229/pggen/internal/codegen/golang/gotype"
 	"strconv"
 	"strings"
+
+	"github.com/robbert229/pggen/internal/codegen/golang/gotype"
 )
 
-func NameEnumTranscoderFunc(typ *gotype.EnumType) string {
+func NameEnumCodecFunc(typ *gotype.EnumType) string {
 	return "new" + typ.Name + "Enum"
 }
 
@@ -84,7 +85,7 @@ func (e EnumTranscoderDeclarer) DedupeKey() string {
 
 func (e EnumTranscoderDeclarer) Declare(string) (string, error) {
 	sb := &strings.Builder{}
-	funcName := NameEnumTranscoderFunc(e.typ)
+	funcName := NameEnumCodecFunc(e.typ)
 
 	// Doc comment
 	sb.WriteString("// ")
@@ -95,7 +96,7 @@ func (e EnumTranscoderDeclarer) Declare(string) (string, error) {
 	sb.WriteString("'.\n")
 
 	// Function signature
-	sb.WriteString("func ")
+	sb.WriteString("func register")
 	sb.WriteString(funcName)
 	sb.WriteString("() pgtype.ValueTranscoder {\n\t")
 

@@ -2,14 +2,15 @@ package golang
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+	"unicode"
+
 	"github.com/robbert229/pggen/internal/ast"
 	"github.com/robbert229/pggen/internal/casing"
 	"github.com/robbert229/pggen/internal/codegen"
 	"github.com/robbert229/pggen/internal/codegen/golang/gotype"
 	"github.com/robbert229/pggen/internal/gomod"
-	"strconv"
-	"strings"
-	"unicode"
 )
 
 // Templater creates query file templates.
@@ -115,6 +116,7 @@ func (tm Templater) templateFile(file codegen.QueryFile, isLeader bool) (Templat
 	imports.AddPackage("context")
 	imports.AddPackage("fmt")
 	imports.AddPackage("github.com/jackc/pgx/v5/pgconn")
+	imports.AddPackage("sync")
 	if isLeader {
 		imports.AddPackage("github.com/jackc/pgx/v5/pgtype")
 		imports.AddPackage("github.com/jackc/pgx/v5")

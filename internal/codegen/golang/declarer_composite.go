@@ -1,16 +1,17 @@
 package golang
 
 import (
-	"github.com/robbert229/pggen/internal/codegen/golang/gotype"
-	"github.com/robbert229/pggen/internal/pg"
 	"strconv"
 	"strings"
+
+	"github.com/robbert229/pggen/internal/codegen/golang/gotype"
+	"github.com/robbert229/pggen/internal/pg"
 )
 
-// NameCompositeTranscoderFunc returns the function name that creates a
+// NameCompositeCodecFunc returns the function name that creates a
 // pgtype.ValueTranscoder for the composite type that's used to decode rows
 // returned by Postgres.
-func NameCompositeTranscoderFunc(typ *gotype.CompositeType) string {
+func NameCompositeCodecFunc(typ *gotype.CompositeType) string {
 	return "new" + typ.Name
 }
 
@@ -121,7 +122,7 @@ func (c CompositeTranscoderDeclarer) DedupeKey() string {
 }
 
 func (c CompositeTranscoderDeclarer) Declare(pkgPath string) (string, error) {
-	funcName := NameCompositeTranscoderFunc(c.typ)
+	funcName := NameCompositeCodecFunc(c.typ)
 	sb := &strings.Builder{}
 	sb.Grow(256)
 
@@ -134,9 +135,9 @@ func (c CompositeTranscoderDeclarer) Declare(pkgPath string) (string, error) {
 	sb.WriteString("'.\n")
 
 	// Function signature
-	sb.WriteString("func (tr *typeResolver) ")
+	sb.WriteString("func register")
 	sb.WriteString(funcName)
-	sb.WriteString("() pgtype.ValueTranscoder {\n\t")
+	sb.WriteString("() pgtype.Codec {\n\t")
 
 	// newCompositeValue call
 	sb.WriteString("return tr.newCompositeValue(\n\t\t")
@@ -150,17 +151,17 @@ func (c CompositeTranscoderDeclarer) Declare(pkgPath string) (string, error) {
 		sb.WriteString(strconv.Quote(c.typ.PgComposite.ColumnNames[i])) // field name
 		sb.WriteString(", typeName: ")
 		sb.WriteString(strconv.Quote(c.typ.PgComposite.ColumnTypes[i].String())) // field type name
-		sb.WriteString(", defaultVal: ")
+		sb.WriteString(", defaultCodec: ")
 
 		// field default pgtype.ValueTranscoder
 		switch fieldType := gotype.UnwrapNestedType(c.typ.FieldTypes[i]).(type) {
 		case *gotype.CompositeType:
-			childFuncName := NameCompositeTranscoderFunc(fieldType)
+			childFuncName := NameCompositeCodecFunc(fieldType)
 			sb.WriteString("tr.")
 			sb.WriteString(childFuncName)
 			sb.WriteString("()")
 		case *gotype.EnumType:
-			sb.WriteString(NameEnumTranscoderFunc(fieldType))
+			sb.WriteString(NameEnumCodecFunc(fieldType))
 			sb.WriteString("()")
 		case *gotype.ArrayType:
 			if typ, ok := gotype.FindKnownTypePgx(fieldType.PgArray.OID()); ok {
@@ -170,7 +171,7 @@ func (c CompositeTranscoderDeclarer) Declare(pkgPath string) (string, error) {
 				break
 			}
 			sb.WriteString("tr.")
-			sb.WriteString(NameArrayTranscoderFunc(fieldType))
+			sb.WriteString(NameArrayCodecFunc(fieldType))
 			sb.WriteString("()")
 		case *gotype.VoidType:
 			// skip
@@ -192,6 +193,7 @@ func (c CompositeTranscoderDeclarer) Declare(pkgPath string) (string, error) {
 					qualType = gotype.QualifyType(c.typ.FieldTypes[i], pkgPath)
 				}
 				sb.WriteString(qualType)
+				sb.WriteString("Codec")
 				sb.WriteString("{}")
 			}
 		}
@@ -243,15 +245,15 @@ func (c CompositeInitDeclarer) Declare(string) (string, error) {
 	sb.WriteString("' to encode query parameters.\n")
 
 	// Function signature
-	sb.WriteString("func (tr *typeResolver) ")
+	sb.WriteString("func register")
 	sb.WriteString(funcName)
 	sb.WriteString("(v ")
 	sb.WriteString(c.typ.Name)
-	sb.WriteString(") pgtype.ValueTranscoder {\n\t")
+	sb.WriteString(") pgtype.Codec {\n\t")
 
 	// Function body
-	sb.WriteString("return tr.setValue(tr.")
-	sb.WriteString(NameCompositeTranscoderFunc(c.typ))
+	sb.WriteString("return tr.setCodec(tr.")
+	sb.WriteString(NameCompositeCodecFunc(c.typ))
 	sb.WriteString("(), tr.")
 	sb.WriteString(NameCompositeRawFunc(c.typ))
 	sb.WriteString("(v))\n")
@@ -291,7 +293,7 @@ func (c CompositeRawDeclarer) Declare(string) (string, error) {
 	sb.WriteString("' as a slice of interface{} to encode query parameters.\n")
 
 	// Function signature
-	sb.WriteString("func (tr *typeResolver) ")
+	sb.WriteString("func register")
 	sb.WriteString(funcName)
 	sb.WriteString("(v ")
 	sb.WriteString(c.typ.Name)

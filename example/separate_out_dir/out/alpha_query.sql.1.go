@@ -5,6 +5,7 @@ package out
 import (
 	"context"
 	"fmt"
+	"sync"
 )
 
 const alphaSQL = `SELECT 'alpha' as output;`
@@ -12,10 +13,18 @@ const alphaSQL = `SELECT 'alpha' as output;`
 // Alpha implements Querier.Alpha.
 func (q *DBQuerier) Alpha(ctx context.Context) (string, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "Alpha")
-	row := q.conn.QueryRow(ctx, alphaSQL)
-	var item string
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query Alpha: %w", err)
+	rows, err := q.conn.Query(ctx, alphaSQL)
+	if err != nil {
+		return "", fmt.Errorf("query Alpha: %w", err)
 	}
-	return item, nil
+
+	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (string, error) {
+		var item string
+		if err := row.Scan(
+			&item,
+		); err != nil {
+			return item, fmt.Errorf("failed to scan: %w", err)
+		}
+		return item, nil
+	})
 }

@@ -2,13 +2,14 @@ package composite
 
 import (
 	"context"
+	"testing"
+
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/robbert229/pggen/internal/difftest"
 	"github.com/robbert229/pggen/internal/pgtest"
 	"github.com/robbert229/pggen/internal/ptrs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestNewQuerier_SearchScreenshots(t *testing.T) {
@@ -87,7 +88,7 @@ func TestNewQuerier_UserEmails(t *testing.T) {
 	require.NoError(t, err)
 	want := UserEmail{
 		ID:    "foo",
-		Email: pgtype.Text{String: "bar@example.com", Status: pgtype.Present},
+		Email: pgtype.Text{String: "bar@example.com", Valid: true},
 	}
 	difftest.AssertSame(t, want, got)
 }
