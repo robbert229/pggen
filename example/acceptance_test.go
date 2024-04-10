@@ -7,9 +7,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/jackc/pgx/v5"
-	"github.com/robbert229/pggen/internal/errs"
-	"github.com/robbert229/pggen/internal/pgdocker"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -18,6 +15,10 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/robbert229/pggen/internal/errs"
+	"github.com/robbert229/pggen/internal/pgdocker"
 )
 
 var update = flag.Bool("update", false, "update integration tests if true")

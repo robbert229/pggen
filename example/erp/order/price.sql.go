@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgtype"
+	"sync"
 )
 
 const findOrdersByPriceSQL = `SELECT * FROM orders WHERE order_total > $1;`
@@ -24,19 +25,19 @@ func (q *DBQuerier) FindOrdersByPrice(ctx context.Context, minTotal pgtype.Numer
 	if err != nil {
 		return nil, fmt.Errorf("query FindOrdersByPrice: %w", err)
 	}
-	defer rows.Close()
-	items := []FindOrdersByPriceRow{}
-	for rows.Next() {
+
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (FindOrdersByPriceRow, error) {
 		var item FindOrdersByPriceRow
-		if err := rows.Scan(&item.OrderID, &item.OrderDate, &item.OrderTotal, &item.CustomerID); err != nil {
-			return nil, fmt.Errorf("scan FindOrdersByPrice row: %w", err)
+		if err := row.Scan(
+			&item.OrderID, // 'order_id', 'OrderID', 'int32', '', 'int32'
+			&item.OrderDate, // 'order_date', 'OrderDate', 'pgtype.Timestamptz', 'github.com/jackc/pgx/v5/pgtype', 'Timestamptz'
+			&item.OrderTotal, // 'order_total', 'OrderTotal', 'pgtype.Numeric', 'github.com/jackc/pgx/v5/pgtype', 'Numeric'
+			&item.CustomerID, // 'customer_id', 'CustomerID', '*int32', '', '*int32'
+		); err != nil {
+			return item, fmt.Errorf("failed to scan: %w", err)
 		}
-		items = append(items, item)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindOrdersByPrice rows: %w", err)
-	}
-	return items, err
+		return item, nil
+	})
 }
 
 const findOrdersMRRSQL = `SELECT date_trunc('month', order_date) AS month, sum(order_total) AS order_mrr
@@ -55,17 +56,15 @@ func (q *DBQuerier) FindOrdersMRR(ctx context.Context) ([]FindOrdersMRRRow, erro
 	if err != nil {
 		return nil, fmt.Errorf("query FindOrdersMRR: %w", err)
 	}
-	defer rows.Close()
-	items := []FindOrdersMRRRow{}
-	for rows.Next() {
+
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (FindOrdersMRRRow, error) {
 		var item FindOrdersMRRRow
-		if err := rows.Scan(&item.Month, &item.OrderMRR); err != nil {
-			return nil, fmt.Errorf("scan FindOrdersMRR row: %w", err)
+		if err := row.Scan(
+			&item.Month, // 'month', 'Month', 'pgtype.Timestamptz', 'github.com/jackc/pgx/v5/pgtype', 'Timestamptz'
+			&item.OrderMRR, // 'order_mrr', 'OrderMRR', 'pgtype.Numeric', 'github.com/jackc/pgx/v5/pgtype', 'Numeric'
+		); err != nil {
+			return item, fmt.Errorf("failed to scan: %w", err)
 		}
-		items = append(items, item)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindOrdersMRR rows: %w", err)
-	}
-	return items, err
+		return item, nil
+	})
 }

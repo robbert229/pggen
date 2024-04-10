@@ -1,8 +1,9 @@
 package golang
 
 import (
-	"github.com/robbert229/pggen/internal/codegen/golang/gotype"
 	"sort"
+
+	"github.com/robbert229/pggen/internal/codegen/golang/gotype"
 )
 
 // Declarer is implemented by any value that needs to declare types, data, or
@@ -157,90 +158,67 @@ func NewConstantDeclarer(key, str string) ConstantDeclarer {
 func (c ConstantDeclarer) DedupeKey() string              { return c.key }
 func (c ConstantDeclarer) Declare(string) (string, error) { return c.str, nil }
 
-const typeResolverInitDecl = `// typeResolver looks up the pgtype.ValueTranscoder by Postgres type name.
-type typeResolver struct {
-	connInfo *pgtype.ConnInfo // types by Postgres type name
+const typeResolverInitDecl = `
+func register(conn *pgx.Conn){
+	//
 }
-
-func newTypeResolver() *typeResolver {
-	ci := pgtype.NewConnInfo()
-	return &typeResolver{connInfo: ci}
-}
-
-// findValue find the OID, and pgtype.ValueTranscoder for a Postgres type name.
-func (tr *typeResolver) findValue(name string) (uint32, pgtype.ValueTranscoder, bool) {
-	typ, ok := tr.connInfo.DataTypeForName(name)
-	if !ok {
-		return 0, nil, false
-	}
-	v := pgtype.NewValue(typ.Value)
-	return typ.OID, v.(pgtype.ValueTranscoder), true
-}
-
-// setValue sets the value of a ValueTranscoder to a value that should always
-// work and panics if it fails.
-func (tr *typeResolver) setValue(vt pgtype.ValueTranscoder, val interface{}) pgtype.ValueTranscoder {
-	if err := vt.Set(val); err != nil {
-		panic(fmt.Sprintf("set ValueTranscoder %T to %+v: %s", vt, val, err))
-	}
-	return vt
-}`
+`
 
 // NewTypeResolverInitDeclarer declare type resolver init code always needed.
 func NewTypeResolverInitDeclarer() ConstantDeclarer {
 	return NewConstantDeclarer("type_resolver::00_common", typeResolverInitDecl)
 }
 
-const typeResolverBodyDecl = `type compositeField struct {
+const typeResolverBodyDecl = `
+/*type compositeField struct {
 	name       string                 // name of the field
 	typeName   string                 // Postgres type name
-	defaultVal pgtype.ValueTranscoder // default value to use
+	defaultCodec pgtype.Codec // default value to use
 }
 
-func (tr *typeResolver) newCompositeValue(name string, fields ...compositeField) pgtype.ValueTranscoder {
-	if _, val, ok := tr.findValue(name); ok {
-		return val
+func (tr *typeResolver) newCompositeValue(name string, fields ...compositeField) pgtype.Codec {
+	if _, codec, ok := tr.findCodec(name); ok {
+		return codec
 	}
-	fs := make([]pgtype.CompositeTypeField, len(fields))
-	vals := make([]pgtype.ValueTranscoder, len(fields))
+
+	codecs := make([]pgtype.CompositeCodecField, len(fields))
 	isBinaryOk := true
+	
 	for i, field := range fields {
-		oid, val, ok := tr.findValue(field.typeName)
+		oid, codec, ok := tr.findCodec(field.typeName)
 		if !ok {
-			oid = unknownOID
-			val = field.defaultVal
+			oid = pgtype.UnknownOID
+			codec = field.defaultCodec
 		}
-		isBinaryOk = isBinaryOk && oid != unknownOID
-		fs[i] = pgtype.CompositeTypeField{Name: field.name, OID: oid}
-		vals[i] = val
+		isBinaryOk = isBinaryOk && oid != pgtype.UnknownOID
+		
+		codecs[i] = pgtype.CompositeCodecField{
+			Name: field.name,
+			Type: &pgtype.Type{Codec: codec, Name: field.typeName, OID: oid},
+		}
 	}
 	// Okay to ignore error because it's only thrown when the number of field
 	// names does not equal the number of ValueTranscoders.
-	typ, _ := pgtype.NewCompositeTypeValues(name, fs, vals)
-	if !isBinaryOk {
-		return textPreferrer{ValueTranscoder: typ, typeName: name}
-	}
-	return typ
+	codec := pgtype.CompositeCodec{Fields: codecs}
+	// typ, _ := pgtype.NewCompositeTypeValues(name, fs, codecs)
+	// if !isBinaryOk {
+	// 	return textPreferrer{ValueTranscoder: typ, typeName: name}
+	// }
+	return codec
 }
 
-func (tr *typeResolver) newArrayValue(name, elemName string, defaultVal func() pgtype.ValueTranscoder) pgtype.ValueTranscoder {
-	if _, val, ok := tr.findValue(name); ok {
+func (tr *typeResolver) newArrayValue(name, elemName string, defaultVal func() pgtype.ValueTranscoder) pgtype.Codec {
+	if _, val, ok := tr.findCodec(name); ok {
 		return val
 	}
-	elemOID, elemVal, ok := tr.findValue(elemName)
-	elemValFunc := func() pgtype.ValueTranscoder {
-		return pgtype.NewValue(elemVal).(pgtype.ValueTranscoder)
-	}
+	
+	pgType, ok := tr.pgMap.TypeForName(elemName)
 	if !ok {
-		elemOID = unknownOID
-		elemValFunc = defaultVal
+		panic("unhandled")
 	}
-	typ := pgtype.NewArrayType(name, elemOID, elemValFunc)
-	if elemOID == unknownOID {
-		return textPreferrer{ValueTranscoder: typ, typeName: name}
-	}
-	return typ
-}`
+	
+	return &pgtype.ArrayCodec{ElementType: pgType}
+}*/`
 
 // NewTypeResolverDeclarer declares type resolver body code sometimes needed.
 func NewTypeResolverDeclarer() ConstantDeclarer {

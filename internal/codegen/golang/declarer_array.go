@@ -2,15 +2,16 @@ package golang
 
 import (
 	"fmt"
-	"github.com/robbert229/pggen/internal/codegen/golang/gotype"
 	"strconv"
 	"strings"
+
+	"github.com/robbert229/pggen/internal/codegen/golang/gotype"
 )
 
-// NameArrayTranscoderFunc returns the function name that creates a
+// NameArrayCodecFunc returns the function name that creates a
 // pgtype.ValueTranscoder for the array type that's used to decode rows returned
 // by Postgres.
-func NameArrayTranscoderFunc(typ *gotype.ArrayType) string {
+func NameArrayCodecFunc(typ *gotype.ArrayType) string {
 	return "new" + typ.Elem.BaseName() + "Array"
 }
 
@@ -71,20 +72,20 @@ func (a ArrayTranscoderDeclarer) DedupeKey() string {
 
 func (a ArrayTranscoderDeclarer) Declare(string) (string, error) {
 	sb := &strings.Builder{}
-	funcName := NameArrayTranscoderFunc(a.typ)
+	funcName := NameArrayCodecFunc(a.typ)
 
 	// Doc comment
 	sb.WriteString("// ")
 	sb.WriteString(funcName)
-	sb.WriteString(" creates a new pgtype.ValueTranscoder for the Postgres\n")
+	sb.WriteString(" creates a new pgtype.Codec for the Postgres\n")
 	sb.WriteString("// '")
 	sb.WriteString(a.typ.PgArray.Name)
 	sb.WriteString("' array type.\n")
 
 	// Function signature
-	sb.WriteString("func (tr *typeResolver) ")
+	sb.WriteString("func register")
 	sb.WriteString(funcName)
-	sb.WriteString("() pgtype.ValueTranscoder {\n\t")
+	sb.WriteString("() pgtype.Codec {\n\t")
 
 	// newArrayValue call
 	sb.WriteString("return tr.newArrayValue(")
@@ -97,9 +98,9 @@ func (a ArrayTranscoderDeclarer) Declare(string) (string, error) {
 	switch elem := gotype.UnwrapNestedType(a.typ.Elem).(type) {
 	case *gotype.CompositeType:
 		sb.WriteString("tr.")
-		sb.WriteString(NameCompositeTranscoderFunc(elem))
+		sb.WriteString(NameCompositeCodecFunc(elem))
 	case *gotype.EnumType:
-		sb.WriteString(NameEnumTranscoderFunc(elem))
+		sb.WriteString(NameEnumCodecFunc(elem))
 	default:
 		return "", fmt.Errorf("array composite decoder only supports composite and enum elems; got %T", a.typ.Elem)
 	}
@@ -148,7 +149,7 @@ func (a ArrayInitDeclarer) Declare(string) (string, error) {
 	sb.WriteString("' to encode query parameters.\n")
 
 	// Function signature
-	sb.WriteString("func (tr *typeResolver) ")
+	sb.WriteString("func register")
 	sb.WriteString(funcName)
 	sb.WriteString("(ps ")
 	sb.WriteString(a.typ.BaseName())
@@ -156,7 +157,7 @@ func (a ArrayInitDeclarer) Declare(string) (string, error) {
 
 	// Function body
 	sb.WriteString("dec := tr.")
-	sb.WriteString(NameArrayTranscoderFunc(a.typ))
+	sb.WriteString(NameArrayCodecFunc(a.typ))
 	sb.WriteString("()\n\t")
 	sb.WriteString("if err := dec.Set(tr.")
 	sb.WriteString(NameArrayRawFunc(a.typ))
@@ -199,7 +200,7 @@ func (a ArrayRawDeclarer) Declare(pkgPath string) (string, error) {
 	sb.WriteString("'\n// as a slice of interface{} for use with the pgtype.Value Set method.\n")
 
 	// Function signature
-	sb.WriteString("func (tr *typeResolver) ")
+	sb.WriteString("func register")
 	sb.WriteString(funcName)
 	sb.WriteString("(vs ")
 	sb.WriteString(gotype.QualifyType(a.typ, pkgPath))
