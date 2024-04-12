@@ -29,8 +29,8 @@ func TestNewQuerier_FindOrdersByCustomer(t *testing.T) {
 		return
 	}
 	order1, err := q.InsertOrder(ctx, InsertOrderParams{
-		OrderDate:  pgtype.Timestamptz{Time: time.Now()},
-		OrderTotal: pgtype.Numeric{Int: big.NewInt(77)},
+		OrderDate:  pgtype.Timestamptz{Time: time.Now(), Valid: true},
+		OrderTotal: pgtype.Numeric{Int: big.NewInt(77), Valid: true},
 		CustID:     cust1.CustomerID,
 	})
 	if err != nil {

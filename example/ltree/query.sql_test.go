@@ -26,10 +26,10 @@ func TestQuerier(t *testing.T) {
 		rows, err := q.FindTopScienceChildren(ctx)
 		require.NoError(t, err)
 		want := []pgtype.Text{
-			{String: "Top.Science", Status: pgtype.Present},
-			{String: "Top.Science.Astronomy", Status: pgtype.Present},
-			{String: "Top.Science.Astronomy.Astrophysics", Status: pgtype.Present},
-			{String: "Top.Science.Astronomy.Cosmology", Status: pgtype.Present},
+			{String: "Top.Science", Valid: true},
+			{String: "Top.Science.Astronomy", Valid: true},
+			{String: "Top.Science.Astronomy.Astrophysics", Valid: true},
+			{String: "Top.Science.Astronomy.Cosmology", Valid: true},
 		}
 		assert.Equal(t, want, rows)
 	}
@@ -37,21 +37,17 @@ func TestQuerier(t *testing.T) {
 	{
 		rows, err := q.FindTopScienceChildrenAgg(ctx)
 		require.NoError(t, err)
-		want := pgtype.TextArray{
-			Elements: []pgtype.Text{
-				{String: "Top.Science", Status: pgtype.Present},
-				{String: "Top.Science.Astronomy", Status: pgtype.Present},
-				{String: "Top.Science.Astronomy.Astrophysics", Status: pgtype.Present},
-				{String: "Top.Science.Astronomy.Cosmology", Status: pgtype.Present},
-			},
-			Status:     pgtype.Present,
-			Dimensions: []pgtype.ArrayDimension{{Length: 4, LowerBound: 1}},
+		want := []pgtype.Text{
+			{String: "Top.Science", Valid: true},
+			{String: "Top.Science.Astronomy", Valid: true},
+			{String: "Top.Science.Astronomy.Astrophysics", Valid: true},
+			{String: "Top.Science.Astronomy.Cosmology", Valid: true},
 		}
 		assert.Equal(t, want, rows)
 	}
 
 	{
-		in1 := pgtype.Text{String: "foo", Status: pgtype.Present}
+		in1 := pgtype.Text{String: "foo", Valid: true}
 		in2 := []string{"qux", "qux"}
 		in2Txt := newTextArray(in2)
 		rows, err := q.FindLtreeInput(ctx, in1, in2)
@@ -65,14 +61,11 @@ func TestQuerier(t *testing.T) {
 
 // newTextArray creates a one dimensional text array from the string slice with
 // no null elements.
-func newTextArray(ss []string) pgtype.TextArray {
+func newTextArray(ss []string) []pgtype.Text {
 	elems := make([]pgtype.Text, len(ss))
 	for i, s := range ss {
-		elems[i] = pgtype.Text{String: s, Status: pgtype.Present}
+		elems[i] = pgtype.Text{String: s, Valid: true}
 	}
-	return pgtype.TextArray{
-		Elements:   elems,
-		Dimensions: []pgtype.ArrayDimension{{Length: int32(len(ss)), LowerBound: 1}},
-		Status:     pgtype.Present,
-	}
+
+	return elems
 }

@@ -122,7 +122,7 @@ var (
 	PgByteaArray       = MustParseKnownType("github.com/jackc/pgx/v5/pgtype.ByteaArray", pg.ByteaArray)
 	PgInt2Array        = MustParseKnownType("github.com/jackc/pgx/v5/pgtype.Int2Array", pg.Int2Array)
 	PgInt4Array        = MustParseKnownType("github.com/jackc/pgx/v5/pgtype.Int4Array", pg.Int4Array)
-	PgTextArray        = MustParseKnownType("github.com/jackc/pgx/v5/pgtype.TextArray", pg.TextArray)
+	PgTextArray        = MustParseKnownType("[]string", pg.TextArray)
 	PgBPCharArray      = MustParseKnownType("github.com/jackc/pgx/v5/pgtype.BPCharArray", pg.BPCharArray)
 	PgVarcharArray     = MustParseKnownType("github.com/jackc/pgx/v5/pgtype.VarcharArray", pg.VarcharArray)
 	PgInt8Array        = MustParseKnownType("github.com/jackc/pgx/v5/pgtype.Int8Array", pg.Int8Array)

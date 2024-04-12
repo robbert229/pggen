@@ -16,7 +16,7 @@ var _ genericConn = (*pgx.Conn)(nil)
 type Querier interface {
 	FindTopScienceChildren(ctx context.Context) ([]pgtype.Text, error)
 
-	FindTopScienceChildrenAgg(ctx context.Context) (pgtype.TextArray, error)
+	FindTopScienceChildrenAgg(ctx context.Context) ([]pgtype.Text, error)
 
 	InsertSampleData(ctx context.Context) (pgconn.CommandTag, error)
 
@@ -68,6 +68,8 @@ func register(ctx context.Context, conn genericConn) error {
 	return nil
 }
 
+
+
 const findTopScienceChildrenSQL = `SELECT path
 FROM test
 WHERE path <@ 'Top.Science';`
@@ -96,15 +98,15 @@ FROM test
 WHERE path <@ 'Top.Science';`
 
 // FindTopScienceChildrenAgg implements Querier.FindTopScienceChildrenAgg.
-func (q *DBQuerier) FindTopScienceChildrenAgg(ctx context.Context) (pgtype.TextArray, error) {
+func (q *DBQuerier) FindTopScienceChildrenAgg(ctx context.Context) ([]pgtype.Text, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindTopScienceChildrenAgg")
 	rows, err := q.conn.Query(ctx, findTopScienceChildrenAggSQL)
 	if err != nil {
-		return TextArray{}, fmt.Errorf("query FindTopScienceChildrenAgg: %w", err)
+		return nil, fmt.Errorf("query FindTopScienceChildrenAgg: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (pgtype.TextArray, error) {
-		var item pgtype.TextArray
+	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) ([]pgtype.Text, error) {
+		var item []pgtype.Text
 		if err := row.Scan(
 			&item,
 		); err != nil {
@@ -151,8 +153,8 @@ const findLtreeInputSQL = `SELECT
   ($2::text[])::ltree[] AS text_arr;`
 
 type FindLtreeInputRow struct {
-	Ltree   pgtype.Text      `json:"ltree"`
-	TextArr pgtype.TextArray `json:"text_arr"`
+	Ltree   pgtype.Text   `json:"ltree"`
+	TextArr []pgtype.Text `json:"text_arr"`
 }
 
 // FindLtreeInput implements Querier.FindLtreeInput.
@@ -167,7 +169,7 @@ func (q *DBQuerier) FindLtreeInput(ctx context.Context, inLtree pgtype.Text, inL
 		var item FindLtreeInputRow
 		if err := row.Scan(
 			&item.Ltree, // 'ltree', 'Ltree', 'pgtype.Text', 'github.com/jackc/pgx/v5/pgtype', 'Text'
-			&item.TextArr, // 'text_arr', 'TextArr', 'pgtype.TextArray', 'github.com/jackc/pgx/v5/pgtype', 'TextArray'
+			&item.TextArr, // 'text_arr', 'TextArr', '[]pgtype.Text', 'github.com/jackc/pgx/v5/pgtype', '[]Text'
 		); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}

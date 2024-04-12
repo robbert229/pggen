@@ -1,12 +1,13 @@
 package ltree
 
 import (
-	"github.com/robbert229/pggen"
-	"github.com/robbert229/pggen/internal/pgtest"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/robbert229/pggen"
+	"github.com/robbert229/pggen/internal/pgtest"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGenerate_Go_Example_ltree(t *testing.T) {
@@ -24,7 +25,7 @@ func TestGenerate_Go_Example_ltree(t *testing.T) {
 			InlineParamCount: 2,
 			TypeOverrides: map[string]string{
 				"ltree":  "github.com/jackc/pgx/v5/pgtype.Text",
-				"_ltree": "github.com/jackc/pgx/v5/pgtype.TextArray",
+				"_ltree": "[]github.com/jackc/pgx/v5/pgtype.Text",
 			},
 		})
 	if err != nil {
