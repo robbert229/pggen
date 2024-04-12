@@ -116,10 +116,10 @@ func (tm Templater) templateFile(file codegen.QueryFile, isLeader bool) (Templat
 	imports.AddPackage("context")
 	imports.AddPackage("fmt")
 	imports.AddPackage("github.com/jackc/pgx/v5/pgconn")
-	imports.AddPackage("sync")
+	imports.AddPackage("github.com/jackc/pgx/v5")
+
 	if isLeader {
 		imports.AddPackage("github.com/jackc/pgx/v5/pgtype")
-		imports.AddPackage("github.com/jackc/pgx/v5")
 	}
 
 	pkgPath := ""

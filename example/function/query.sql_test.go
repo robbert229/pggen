@@ -2,10 +2,11 @@ package function
 
 import (
 	"context"
+	"testing"
+
 	"github.com/robbert229/pggen/internal/difftest"
 	"github.com/robbert229/pggen/internal/ptrs"
 	"github.com/stretchr/testify/require"
-	"testing"
 
 	"github.com/robbert229/pggen/internal/pgtest"
 )
@@ -14,7 +15,8 @@ func TestNewQuerier_OutParams(t *testing.T) {
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
 
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 
 	t.Run("OutParams", func(t *testing.T) {
 		got, err := q.OutParams(context.Background())

@@ -3,6 +3,8 @@ package pginfer
 import (
 	"context"
 	"errors"
+	"testing"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/robbert229/pggen/internal/ast"
@@ -12,7 +14,6 @@ import (
 	"github.com/robbert229/pggen/internal/texts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestInferrer_InferTypes(t *testing.T) {
@@ -32,7 +33,10 @@ func TestInferrer_InferTypes(t *testing.T) {
 		CREATE DOMAIN us_postal_code AS text;
 	`))
 	defer cleanupFunc()
-	q := pg.NewQuerier(conn)
+
+	q, err := pg.NewQuerier(context.Background(), conn)
+	require.Nil(t, err)
+
 	deviceTypeOID, err := q.FindOIDByName(context.Background(), "device_type")
 	require.NoError(t, err)
 	deviceTypeArrOID, err := q.FindOIDByName(context.Background(), "_device_type")
@@ -318,7 +322,9 @@ func TestInferrer_InferTypes(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			inferrer := NewInferrer(conn)
+			inferrer, err := NewInferrer(context.Background(), conn)
+			require.Nil(t, err)
+
 			got, err := inferrer.InferTypes(tt.query)
 			if err != nil {
 				t.Fatal(err)
@@ -379,7 +385,9 @@ func TestInferrer_InferTypes_Error(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.query.Name, func(t *testing.T) {
-			inferrer := NewInferrer(conn)
+			inferrer, err := NewInferrer(context.Background(), conn)
+			require.NoError(t, err)
+
 			got, err := inferrer.InferTypes(tt.query)
 			assert.Equal(t, TypedQuery{}, got, "InferTypes should error and return empty TypedQuery struct")
 			assert.Equal(t, tt.want, err, "InferType error should match")

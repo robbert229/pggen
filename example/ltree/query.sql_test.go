@@ -2,18 +2,20 @@ package ltree
 
 import (
 	"context"
+	"testing"
+
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/robbert229/pggen/internal/pgtest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestQuerier(t *testing.T) {
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
 
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 	ctx := context.Background()
 
 	if _, err := q.InsertSampleData(ctx); err != nil {

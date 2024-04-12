@@ -2,11 +2,12 @@ package slices
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/robbert229/pggen/internal/difftest"
 	"github.com/robbert229/pggen/internal/pgtest"
 	"github.com/stretchr/testify/require"
-	"testing"
-	"time"
 )
 
 func TestNewQuerier_GetBools(t *testing.T) {
@@ -14,7 +15,8 @@ func TestNewQuerier_GetBools(t *testing.T) {
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
 
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 
 	t.Run("GetBools", func(t *testing.T) {
 		want := []bool{true, true, false}
@@ -29,7 +31,8 @@ func TestNewQuerier_GetOneTimestamp(t *testing.T) {
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
 
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 	ts := time.Date(2020, 1, 1, 11, 11, 11, 0, time.UTC)
 
 	t.Run("GetOneTimestamp", func(t *testing.T) {
@@ -44,7 +47,8 @@ func TestNewQuerier_GetManyTimestamptzs(t *testing.T) {
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
 
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 	ts1 := time.Date(2020, 1, 1, 11, 11, 11, 0, time.UTC)
 	ts2 := time.Date(2022, 2, 2, 22, 22, 22, 0, time.UTC)
 

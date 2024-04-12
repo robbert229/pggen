@@ -2,17 +2,19 @@ package domain
 
 import (
 	"context"
+	"testing"
+
 	"github.com/robbert229/pggen/internal/pgtest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestQuerier_DomainOne(t *testing.T) {
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
 
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 	ctx := context.Background()
 
 	t.Run("DomainOne", func(t *testing.T) {

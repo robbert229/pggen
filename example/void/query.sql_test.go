@@ -2,31 +2,31 @@ package void
 
 import (
 	"context"
+	"testing"
+
 	"github.com/robbert229/pggen/internal/pgtest"
 	"github.com/stretchr/testify/assert"
-	"testing"
+	"github.com/stretchr/testify/require"
 )
 
 func TestQuerier(t *testing.T) {
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
 
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 	ctx := context.Background()
 
-	if _, err := q.VoidOnly(ctx); err != nil {
-		t.Fatal(err)
-	}
+	_, err = q.VoidOnly(ctx)
+	require.NoError(t, err)
 
-	if _, err := q.VoidOnlyTwoParams(ctx, 33); err != nil {
-		t.Fatal(err)
-	}
+	_, err = q.VoidOnlyTwoParams(ctx, 33)
+	require.NoError(t, err)
 
 	{
 		row, err := q.VoidTwo(ctx)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
+
 		assert.Equal(t, "foo", row)
 	}
 

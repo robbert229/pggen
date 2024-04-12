@@ -2,24 +2,27 @@ package device
 
 import (
 	"context"
-	"github.com/jackc/pgx/v5/pgtype"
+	"net"
+	"testing"
+
+	"github.com/jackc/pgx/v5"
 	"github.com/robbert229/pggen/internal/pgtest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"net"
-	"testing"
 )
 
 func TestQuerier_FindDevicesByUser(t *testing.T) {
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 	ctx := context.Background()
 	userID := 18
-	_, err := q.InsertUser(ctx, userID, "foo")
+
+	_, err = q.InsertUser(ctx, userID, "foo")
 	require.NoError(t, err)
 	mac1, _ := net.ParseMAC("11:22:33:44:55:66")
-	_, err = q.InsertDevice(ctx, pgtype.Macaddr{Status: pgtype.Present, Addr: mac1}, userID)
+	_, err = q.InsertDevice(ctx, mac1, userID)
 	require.NoError(t, err)
 
 	t.Run("FindDevicesByUser", func(t *testing.T) {
@@ -29,13 +32,8 @@ func TestQuerier_FindDevicesByUser(t *testing.T) {
 			{
 				ID:   userID,
 				Name: "foo",
-				MacAddrs: pgtype.MacaddrArray{
-					Elements: []pgtype.Macaddr{{Addr: mac1, Status: pgtype.Present}},
-					Dimensions: []pgtype.ArrayDimension{{
-						Length:     1,
-						LowerBound: 1,
-					}},
-					Status: pgtype.Present,
+				MacAddrs: []net.HardwareAddr{
+					mac1,
 				},
 			},
 		}
@@ -43,22 +41,25 @@ func TestQuerier_FindDevicesByUser(t *testing.T) {
 	})
 }
 
+var _ genericConn = (*pgx.Conn)(nil)
+
 func TestQuerier_CompositeUser(t *testing.T) {
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 	ctx := context.Background()
 
 	userID := 18
 	name := "foo"
-	_, err := q.InsertUser(ctx, userID, name)
+	_, err = q.InsertUser(ctx, userID, name)
 	require.NoError(t, err)
 
 	mac1, _ := net.ParseMAC("11:22:33:44:55:66")
 	mac2, _ := net.ParseMAC("aa:bb:cc:dd:ee:ff")
-	_, err = q.InsertDevice(ctx, pgtype.Macaddr{Status: pgtype.Present, Addr: mac1}, userID)
+	_, err = q.InsertDevice(ctx, mac1, userID)
 	require.NoError(t, err)
-	_, err = q.InsertDevice(ctx, pgtype.Macaddr{Status: pgtype.Present, Addr: mac2}, userID)
+	_, err = q.InsertDevice(ctx, mac2, userID)
 	require.NoError(t, err)
 
 	t.Run("CompositeUser", func(t *testing.T) {
@@ -66,12 +67,12 @@ func TestQuerier_CompositeUser(t *testing.T) {
 		require.NoError(t, err)
 		want := []CompositeUserRow{
 			{
-				Mac:  pgtype.Macaddr{Addr: mac1, Status: pgtype.Present},
+				Mac:  mac1,
 				Type: DeviceTypeUndefined,
 				User: User{ID: &userID, Name: &name},
 			},
 			{
-				Mac:  pgtype.Macaddr{Addr: mac2, Status: pgtype.Present},
+				Mac:  mac2,
 				Type: DeviceTypeUndefined,
 				User: User{ID: &userID, Name: &name},
 			},
@@ -83,7 +84,8 @@ func TestQuerier_CompositeUser(t *testing.T) {
 func TestQuerier_CompositeUserOne(t *testing.T) {
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 	ctx := context.Background()
 	id := 15
 	name := "qux"

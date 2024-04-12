@@ -5,8 +5,10 @@ package out
 import (
 	"context"
 	"fmt"
-	"sync"
+	"github.com/jackc/pgx/v5"
 )
+
+var _ genericConn = (*pgx.Conn)(nil)
 
 const alphaSQL = `SELECT 'alpha' as output;`
 

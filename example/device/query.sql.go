@@ -8,8 +8,10 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
-	"sync"
+	"net"
 )
+
+var _ genericConn = (*pgx.Conn)(nil)
 
 // Querier is a typesafe Go interface backed by SQL queries.
 type Querier interface {
@@ -25,7 +27,7 @@ type Querier interface {
 
 	InsertUser(ctx context.Context, userID int, name string) (pgconn.CommandTag, error)
 
-	InsertDevice(ctx context.Context, mac pgtype.Macaddr, owner int) (pgconn.CommandTag, error)
+	InsertDevice(ctx context.Context, mac net.HardwareAddr, owner int) (pgconn.CommandTag, error)
 }
 
 var _ Querier = &DBQuerier{}
@@ -39,15 +41,38 @@ type genericConn interface {
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+
+	LoadType(ctx context.Context, typeName string) (*pgtype.Type, error)
+	TypeMap() *pgtype.Map
 }
 
 // NewQuerier creates a DBQuerier that implements Querier.
-func NewQuerier(conn *pgx.Conn) *DBQuerier {
-	_ = conn
+func NewQuerier(ctx context.Context, conn genericConn) (*DBQuerier, error) {
+	if err := register(ctx, conn); err != nil {
+		return nil, fmt.Errorf("failed to create new querier: %w", err)
+	}
 
 	return &DBQuerier{
 		conn: conn, 
+	}, nil
+}
+
+type typeHook func(ctx context.Context, conn genericConn) error
+
+var typeHooks []typeHook
+
+func addHook(hook typeHook) {
+	typeHooks = append(typeHooks, hook)
+}
+
+func register(ctx context.Context, conn genericConn) error {
+	for _, hook := range typeHooks {
+		if err := hook(ctx, conn); err != nil {
+			return err
+		}
 	}
+	
+	return nil
 }
 
 // User represents the Postgres composite type "user".
@@ -71,71 +96,60 @@ const (
 func (d DeviceType) String() string { return string(d) }
 
 
-func register(conn *pgx.Conn){
-	//
-}
 
 
-
-/*type compositeField struct {
-	name       string                 // name of the field
-	typeName   string                 // Postgres type name
-	defaultCodec pgtype.Codec // default value to use
-}
-
-func (tr *typeResolver) newCompositeValue(name string, fields ...compositeField) pgtype.Codec {
-	if _, codec, ok := tr.findCodec(name); ok {
-		return codec
-	}
-
-	codecs := make([]pgtype.CompositeCodecField, len(fields))
-	isBinaryOk := true
-	
-	for i, field := range fields {
-		oid, codec, ok := tr.findCodec(field.typeName)
-		if !ok {
-			oid = pgtype.UnknownOID
-			codec = field.defaultCodec
-		}
-		isBinaryOk = isBinaryOk && oid != pgtype.UnknownOID
+	// codec_newUser is a codec for the composite type of the same name
+	func codec_newUser(conn genericConn) (pgtype.Codec, error) {
 		
-		codecs[i] = pgtype.CompositeCodecField{
-			Name: field.name,
-			Type: &pgtype.Type{Codec: codec, Name: field.typeName, OID: oid},
+		    field0, ok := conn.TypeMap().TypeForName("int8")
+			if !ok {
+				return nil, fmt.Errorf("type not found: int8")
+			}
+		
+		    field1, ok := conn.TypeMap().TypeForName("text")
+			if !ok {
+				return nil, fmt.Errorf("type not found: text")
+			}
+		
+		
+		return &pgtype.CompositeCodec{
+			Fields: []pgtype.CompositeCodecField{
+				
+					{
+						Name: "id",
+						Type: field0,
+					},
+				
+					{
+						Name: "name",
+						Type: field1,
+					},
+				
+			},
+		}, nil
+	}
+
+	func register_newUser(
+		ctx context.Context,
+		conn genericConn,
+	) error {
+		t, err := conn.LoadType(
+			ctx,
+			"\"user\"",
+		)
+		if err != nil {
+			return fmt.Errorf("failed to load type for: %w", err)
 		}
-	}
-	// Okay to ignore error because it's only thrown when the number of field
-	// names does not equal the number of ValueTranscoders.
-	codec := pgtype.CompositeCodec{Fields: codecs}
-	// typ, _ := pgtype.NewCompositeTypeValues(name, fs, codecs)
-	// if !isBinaryOk {
-	// 	return textPreferrer{ValueTranscoder: typ, typeName: name}
-	// }
-	return codec
-}
+		
+		conn.TypeMap().RegisterType(t)
 
-func (tr *typeResolver) newArrayValue(name, elemName string, defaultVal func() pgtype.ValueTranscoder) pgtype.Codec {
-	if _, val, ok := tr.findCodec(name); ok {
-		return val
+		return nil
+	}
+
+	func init(){
+		addHook(register_newUser) 
 	}
 	
-	pgType, ok := tr.pgMap.TypeForName(elemName)
-	if !ok {
-		panic("unhandled")
-	}
-	
-	return &pgtype.ArrayCodec{ElementType: pgType}
-}*/
-
-// newUser creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'user'.
-func registernewUser() pgtype.Codec {
-	return tr.newCompositeValue(
-		"user",
-		compositeField{name: "id", typeName: "int8", defaultCodec: &pgtype.Int8Codec{}},
-		compositeField{name: "name", typeName: "text", defaultCodec: &pgtype.TextCodec{}},
-	)
-}
 
 const findDevicesByUserSQL = `SELECT
   id,
@@ -145,9 +159,9 @@ FROM "user"
 WHERE id = $1;`
 
 type FindDevicesByUserRow struct {
-	ID       int                 `json:"id"`
-	Name     string              `json:"name"`
-	MacAddrs pgtype.MacaddrArray `json:"mac_addrs"`
+	ID       int                `json:"id"`
+	Name     string             `json:"name"`
+	MacAddrs []net.HardwareAddr `json:"mac_addrs"`
 }
 
 // FindDevicesByUser implements Querier.FindDevicesByUser.
@@ -163,7 +177,7 @@ func (q *DBQuerier) FindDevicesByUser(ctx context.Context, id int) ([]FindDevice
 		if err := row.Scan(
 			&item.ID, // 'id', 'ID', 'int', '', 'int'
 			&item.Name, // 'name', 'Name', 'string', '', 'string'
-			&item.MacAddrs, // 'mac_addrs', 'MacAddrs', 'pgtype.MacaddrArray', 'github.com/jackc/pgx/v5/pgtype', 'MacaddrArray'
+			&item.MacAddrs, // 'mac_addrs', 'MacAddrs', '[]net.HardwareAddr', 'net', '[]HardwareAddr'
 		); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
@@ -179,9 +193,9 @@ FROM device d
   LEFT JOIN "user" u ON u.id = d.owner;`
 
 type CompositeUserRow struct {
-	Mac  pgtype.Macaddr `json:"mac"`
-	Type DeviceType     `json:"type"`
-	User User           `json:"user"`
+	Mac  net.HardwareAddr `json:"mac"`
+	Type DeviceType       `json:"type"`
+	User User             `json:"user"`
 }
 
 // CompositeUser implements Querier.CompositeUser.
@@ -195,7 +209,7 @@ func (q *DBQuerier) CompositeUser(ctx context.Context) ([]CompositeUserRow, erro
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (CompositeUserRow, error) {
 		var item CompositeUserRow
 		if err := row.Scan(
-			&item.Mac, // 'mac', 'Mac', 'pgtype.Macaddr', 'github.com/jackc/pgx/v5/pgtype', 'Macaddr'
+			&item.Mac, // 'mac', 'Mac', 'net.HardwareAddr', 'net', 'HardwareAddr'
 			&item.Type, // 'type', 'Type', 'DeviceType', 'github.com/robbert229/pggen/example/device', 'DeviceType'
 			&item.User, // 'user', 'User', 'User', 'github.com/robbert229/pggen/example/device', 'User'
 		); err != nil {
@@ -291,66 +305,11 @@ const insertDeviceSQL = `INSERT INTO device (mac, owner)
 VALUES ($1, $2);`
 
 // InsertDevice implements Querier.InsertDevice.
-func (q *DBQuerier) InsertDevice(ctx context.Context, mac pgtype.Macaddr, owner int) (pgconn.CommandTag, error) {
+func (q *DBQuerier) InsertDevice(ctx context.Context, mac net.HardwareAddr, owner int) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertDevice")
 	cmdTag, err := q.conn.Exec(ctx, insertDeviceSQL, mac, owner)
 	if err != nil {
 		return pgconn.CommandTag{}, fmt.Errorf("exec query InsertDevice: %w", err)
 	}
 	return cmdTag, err
-}
-
-type scanCacheKey struct {
-	oid      uint32
-	format   int16
-	typeName string
-}
-
-var (
-	plans   = make(map[scanCacheKey]pgtype.ScanPlan, 16)
-	plansMu sync.RWMutex
-)
-
-func planScan(codec pgtype.Codec, fd pgconn.FieldDescription, target any) pgtype.ScanPlan {
-	key := scanCacheKey{fd.DataTypeOID, fd.Format, fmt.Sprintf("%T", target)}
-	plansMu.RLock()
-	plan := plans[key]
-	plansMu.RUnlock()
-	if plan != nil {
-		return plan
-	}
-	plan = codec.PlanScan(nil, fd.DataTypeOID, fd.Format, target)
-	plansMu.Lock()
-	plans[key] = plan
-	plansMu.Unlock()
-	return plan
-}
-
-type ptrScanner[T any] struct {
-	basePlan pgtype.ScanPlan
-}
-
-func (s ptrScanner[T]) Scan(src []byte, dst any) error {
-	if src == nil {
-		return nil
-	}
-	d := dst.(**T)
-	*d = new(T)
-	return s.basePlan.Scan(src, *d)
-}
-
-func planPtrScan[T any](codec pgtype.Codec, fd pgconn.FieldDescription, target *T) pgtype.ScanPlan {
-	key := scanCacheKey{fd.DataTypeOID, fd.Format, fmt.Sprintf("*%T", target)}
-	plansMu.RLock()
-	plan := plans[key]
-	plansMu.RUnlock()
-	if plan != nil {
-		return plan
-	}
-	basePlan := planScan(codec, fd, target)
-	ptrPlan := ptrScanner[T]{basePlan}
-	plansMu.Lock()
-	plans[key] = plan
-	plansMu.Unlock()
-	return ptrPlan
 }

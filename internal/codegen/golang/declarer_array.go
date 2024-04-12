@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"text/template"
 
 	"github.com/robbert229/pggen/internal/codegen/golang/gotype"
 )
@@ -74,41 +75,56 @@ func (a ArrayTranscoderDeclarer) Declare(string) (string, error) {
 	sb := &strings.Builder{}
 	funcName := NameArrayCodecFunc(a.typ)
 
-	// Doc comment
-	sb.WriteString("// ")
-	sb.WriteString(funcName)
-	sb.WriteString(" creates a new pgtype.Codec for the Postgres\n")
-	sb.WriteString("// '")
-	sb.WriteString(a.typ.PgArray.Name)
-	sb.WriteString("' array type.\n")
+	t := template.New("declarer")
+	t = template.Must(t.Parse(`
+	// codec_{{ .FuncName }} is a codec for the composite type of the same name
+	func codec_{{ .FuncName }}(conn genericConn) (pgtype.Codec, error) {
+		elementType, ok := conn.TypeMap().TypeForName("{{ .PgElemName }}")
+		if !ok {
+			return nil, fmt.Errorf("type not found: {{ .PgElemName }}")
+		}
 
-	// Function signature
-	sb.WriteString("func register")
-	sb.WriteString(funcName)
-	sb.WriteString("() pgtype.Codec {\n\t")
-
-	// newArrayValue call
-	sb.WriteString("return tr.newArrayValue(")
-	sb.WriteString(strconv.Quote(a.typ.PgArray.Name))
-	sb.WriteString(", ")
-	sb.WriteString(strconv.Quote(a.typ.PgArray.Elem.String()))
-	sb.WriteString(", ")
-
-	// Default element transcoder
-	switch elem := gotype.UnwrapNestedType(a.typ.Elem).(type) {
-	case *gotype.CompositeType:
-		sb.WriteString("tr.")
-		sb.WriteString(NameCompositeCodecFunc(elem))
-	case *gotype.EnumType:
-		sb.WriteString(NameEnumCodecFunc(elem))
-	default:
-		return "", fmt.Errorf("array composite decoder only supports composite and enum elems; got %T", a.typ.Elem)
+		return &pgtype.ArrayCodec{
+			ElementType: elementType,
+		}, nil
 	}
-	sb.WriteString(")")
-	sb.WriteString("\n")
-	sb.WriteString("}")
 
-	return sb.String(), nil
+	func register_{{ .FuncName }}(
+		ctx context.Context,
+		conn genericConn,
+	) error {
+		t, err := conn.LoadType(
+			ctx,
+			{{ .PgArrayName }},
+		)
+		if err != nil {
+			return fmt.Errorf("failed to load type for: %w", err)
+		}
+		
+		conn.TypeMap().RegisterType(t)
+
+		return nil
+	}
+
+	func init(){
+		addHook(register_{{ .FuncName }}) 
+	}
+	`))
+
+	b := &strings.Builder{}
+	b.Grow(256)
+	t.Execute(b, struct {
+		FuncName    string
+		Fields      string
+		PgArrayName string
+		PgElemName  string
+	}{
+		FuncName:    funcName,
+		Fields:      sb.String(),
+		PgArrayName: strconv.Quote(strconv.Quote(a.typ.PgArray.Name)),
+		PgElemName:  a.typ.PgArray.Elem.String(),
+	})
+	return b.String(), nil
 }
 
 // ArrayInitDeclarer declares a new Go function that creates an *initialized*

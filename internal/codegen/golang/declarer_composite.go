@@ -3,9 +3,9 @@ package golang
 import (
 	"strconv"
 	"strings"
+	"text/template"
 
 	"github.com/robbert229/pggen/internal/codegen/golang/gotype"
-	"github.com/robbert229/pggen/internal/pg"
 )
 
 // NameCompositeCodecFunc returns the function name that creates a
@@ -123,88 +123,80 @@ func (c CompositeTranscoderDeclarer) DedupeKey() string {
 
 func (c CompositeTranscoderDeclarer) Declare(pkgPath string) (string, error) {
 	funcName := NameCompositeCodecFunc(c.typ)
-	sb := &strings.Builder{}
-	sb.Grow(256)
 
-	// Doc comment
-	sb.WriteString("// ")
-	sb.WriteString(funcName)
-	sb.WriteString(" creates a new pgtype.ValueTranscoder for the Postgres\n")
-	sb.WriteString("// composite type '")
-	sb.WriteString(c.typ.PgComposite.Name)
-	sb.WriteString("'.\n")
-
-	// Function signature
-	sb.WriteString("func register")
-	sb.WriteString(funcName)
-	sb.WriteString("() pgtype.Codec {\n\t")
-
-	// newCompositeValue call
-	sb.WriteString("return tr.newCompositeValue(\n\t\t")
-	sb.WriteString(strconv.Quote(c.typ.PgComposite.Name))
-	sb.WriteString(",")
-
-	// newCompositeValue - field names of the composite type
-	for i := range c.typ.FieldNames {
-		sb.WriteString("\n\t\t")
-		sb.WriteString(`compositeField{name: `)
-		sb.WriteString(strconv.Quote(c.typ.PgComposite.ColumnNames[i])) // field name
-		sb.WriteString(", typeName: ")
-		sb.WriteString(strconv.Quote(c.typ.PgComposite.ColumnTypes[i].String())) // field type name
-		sb.WriteString(", defaultCodec: ")
-
-		// field default pgtype.ValueTranscoder
-		switch fieldType := gotype.UnwrapNestedType(c.typ.FieldTypes[i]).(type) {
-		case *gotype.CompositeType:
-			childFuncName := NameCompositeCodecFunc(fieldType)
-			sb.WriteString("tr.")
-			sb.WriteString(childFuncName)
-			sb.WriteString("()")
-		case *gotype.EnumType:
-			sb.WriteString(NameEnumCodecFunc(fieldType))
-			sb.WriteString("()")
-		case *gotype.ArrayType:
-			if typ, ok := gotype.FindKnownTypePgx(fieldType.PgArray.OID()); ok {
-				sb.WriteString("&") // pgx needs pointers to types
-				sb.WriteString(gotype.QualifyType(typ, pkgPath))
-				sb.WriteString("{}")
-				break
+	t := template.New("declarer")
+	t = template.Must(t.Parse(`
+	// codec_{{ .FuncName }} is a codec for the composite type of the same name
+	func codec_{{ .FuncName }}(conn genericConn) (pgtype.Codec, error) {
+		{{ range $i, $val := .Columns }}
+		    field{{ $i }}, ok := conn.TypeMap().TypeForName("{{ $val.PgFieldTypeName }}")
+			if !ok {
+				return nil, fmt.Errorf("type not found: {{ $val.PgFieldTypeName }}")
 			}
-			sb.WriteString("tr.")
-			sb.WriteString(NameArrayCodecFunc(fieldType))
-			sb.WriteString("()")
-		case *gotype.VoidType:
-			// skip
-		default:
-			sb.WriteString("&") // pgx needs pointers to types
-			// TODO: support builtin types and builtin wrappers that use a different
-			// initialization syntax.
-			pgType := c.typ.PgComposite.ColumnTypes[i]
-			if pgType == nil || pgType == (pg.VoidType{}) {
-				sb.WriteString("nil,")
-			} else {
-				var qualType string
-				if decoderType, ok := gotype.FindKnownTypePgx(pgType.OID()); ok {
-					// Look for the pgx variant it matches the interface expected by
-					// newCompositeValue, pgtype.ValueTranscoder.
-					qualType = gotype.QualifyType(decoderType, pkgPath)
-				} else {
-					// Attempt to use the original, provided type.
-					qualType = gotype.QualifyType(c.typ.FieldTypes[i], pkgPath)
-				}
-				sb.WriteString(qualType)
-				sb.WriteString("Codec")
-				sb.WriteString("{}")
-			}
-		}
-		sb.WriteString(`},`)
+		{{ end }}
+		
+		return &pgtype.CompositeCodec{
+			Fields: []pgtype.CompositeCodecField{
+				{{ range $i, $val := .Columns }}
+					{
+						Name: {{ $val.Name }},
+						Type: field{{ $i }},
+					},
+				{{ end }}
+			},
+		}, nil
 	}
 
-	sb.WriteString("\n\t")
-	sb.WriteString(")")
-	sb.WriteString("\n")
-	sb.WriteString("}")
-	return sb.String(), nil
+	func register_{{ .FuncName }}(
+		ctx context.Context,
+		conn genericConn,
+	) error {
+		t, err := conn.LoadType(
+			ctx,
+			{{ .PgCompositeName }},
+		)
+		if err != nil {
+			return fmt.Errorf("failed to load type for: %w", err)
+		}
+		
+		conn.TypeMap().RegisterType(t)
+
+		return nil
+	}
+
+	func init(){
+		addHook(register_{{ .FuncName }}) 
+	}
+	`))
+
+	type Column struct {
+		Name            string
+		PgFieldTypeName string
+	}
+
+	var columns []Column
+
+	for i := 0; i < len(c.typ.PgComposite.ColumnNames); i++ {
+		columns = append(columns, Column{
+			Name:            strconv.Quote(c.typ.PgComposite.ColumnNames[i]),
+			PgFieldTypeName: c.typ.PgComposite.ColumnTypes[i].String(),
+		})
+	}
+
+	b := &strings.Builder{}
+	b.Grow(256)
+	if err := t.Execute(b, struct {
+		FuncName        string
+		Columns         []Column
+		PgCompositeName string
+	}{
+		FuncName:        funcName,
+		Columns:         columns,
+		PgCompositeName: strconv.Quote(strconv.Quote(c.typ.PgComposite.Name)),
+	}); err != nil {
+		return "", err
+	}
+	return b.String(), nil
 }
 
 // CompositeInitDeclarer declares a new Go function that creates an initialized

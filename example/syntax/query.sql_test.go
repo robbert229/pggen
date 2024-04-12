@@ -2,15 +2,18 @@ package syntax
 
 import (
 	"context"
+	"testing"
+
 	"github.com/robbert229/pggen/internal/pgtest"
 	"github.com/stretchr/testify/assert"
-	"testing"
+	"github.com/stretchr/testify/require"
 )
 
 func TestQuerier(t *testing.T) {
 	conn, cleanup := pgtest.NewPostgresSchema(t, nil)
 	defer cleanup()
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 	ctx := context.Background()
 
 	val, err := q.Backtick(ctx)

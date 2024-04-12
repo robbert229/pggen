@@ -3,9 +3,10 @@ package pginfer
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgconn"
 	"strings"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/robbert229/pggen/internal/ast"
@@ -65,11 +66,16 @@ type Inferrer struct {
 
 // NewInferrer infers information about a query by running the query on
 // Postgres and extracting information from the catalog tables.
-func NewInferrer(conn *pgx.Conn) *Inferrer {
+func NewInferrer(ctx context.Context, conn *pgx.Conn) (*Inferrer, error) {
+	fetcher, err := pg.NewTypeFetcher(ctx, conn)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Inferrer{
 		conn:        conn,
-		typeFetcher: pg.NewTypeFetcher(conn),
-	}
+		typeFetcher: fetcher,
+	}, nil
 }
 
 func (inf *Inferrer) InferTypes(query *ast.SourceQuery) (TypedQuery, error) {

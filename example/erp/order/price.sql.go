@@ -5,9 +5,11 @@ package order
 import (
 	"context"
 	"fmt"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	"sync"
 )
+
+var _ genericConn = (*pgx.Conn)(nil)
 
 const findOrdersByPriceSQL = `SELECT * FROM orders WHERE order_total > $1;`
 

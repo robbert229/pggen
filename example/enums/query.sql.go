@@ -8,14 +8,16 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
-	"sync"
+	"net"
 )
+
+var _ genericConn = (*pgx.Conn)(nil)
 
 // Querier is a typesafe Go interface backed by SQL queries.
 type Querier interface {
 	FindAllDevices(ctx context.Context) ([]FindAllDevicesRow, error)
 
-	InsertDevice(ctx context.Context, mac pgtype.Macaddr, typePg DeviceType) (pgconn.CommandTag, error)
+	InsertDevice(ctx context.Context, mac net.HardwareAddr, typePg DeviceType) (pgconn.CommandTag, error)
 
 	// Select an array of all device_type enum values.
 	FindOneDeviceArray(ctx context.Context) ([]DeviceType, error)
@@ -41,38 +43,83 @@ type genericConn interface {
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+
+	LoadType(ctx context.Context, typeName string) (*pgtype.Type, error)
+	TypeMap() *pgtype.Map
 }
 
 // NewQuerier creates a DBQuerier that implements Querier.
-func NewQuerier(conn *pgx.Conn) *DBQuerier {
-	_ = conn
+func NewQuerier(ctx context.Context, conn genericConn) (*DBQuerier, error) {
+	if err := register(ctx, conn); err != nil {
+		return nil, fmt.Errorf("failed to create new querier: %w", err)
+	}
 
 	return &DBQuerier{
 		conn: conn, 
+	}, nil
+}
+
+type typeHook func(ctx context.Context, conn genericConn) error
+
+var typeHooks []typeHook
+
+func addHook(hook typeHook) {
+	typeHooks = append(typeHooks, hook)
+}
+
+func register(ctx context.Context, conn genericConn) error {
+	for _, hook := range typeHooks {
+		if err := hook(ctx, conn); err != nil {
+			return err
+		}
 	}
+	
+	return nil
 }
 
 // Device represents the Postgres composite type "device".
 type Device struct {
-	Mac  pgtype.Macaddr `json:"mac"`
-	Type DeviceType     `json:"type"`
+	Mac  net.HardwareAddr `json:"mac"`
+	Type DeviceType       `json:"type"`
 }
 
-// newDeviceTypeEnum creates a new pgtype.ValueTranscoder for the
-// Postgres enum type 'device_type'.
-func registernewDeviceTypeEnum() pgtype.ValueTranscoder {
-	return pgtype.NewEnumType(
-		"device_type",
-		[]string{
-			string(DeviceTypeUndefined),
-			string(DeviceTypePhone),
-			string(DeviceTypeLaptop),
-			string(DeviceTypeIpad),
-			string(DeviceTypeDesktop),
-			string(DeviceTypeIot),
-		},
+
+// register_newDeviceTypeEnum registers the given postgres type with pgx.
+func register_newDeviceTypeEnum(
+	ctx context.Context,
+	conn genericConn,
+) error {
+	t, err := conn.LoadType(
+		ctx,
+		"\"device_type\"",
 	)
+	if err != nil {
+		return fmt.Errorf("failed to load type for: %w", err)
+	}
+	
+	conn.TypeMap().RegisterType(t)
+	
+	t, err = conn.LoadType(
+		ctx,
+		"_device_type",
+	)
+	if err != nil {
+		return fmt.Errorf("failed to load type for: %w", err)
+	}
+	
+	conn.TypeMap().RegisterType(t)
+	
+	return nil
 }
+
+func codec_newDeviceTypeEnum(conn genericConn) (pgtype.Codec, error) {
+	return &pgtype.EnumCodec{}, nil
+}
+
+func init(){
+	addHook(register_newDeviceTypeEnum) 
+}
+
 
 // DeviceType represents the Postgres enum "device_type".
 type DeviceType string
@@ -89,84 +136,102 @@ const (
 func (d DeviceType) String() string { return string(d) }
 
 
-func register(conn *pgx.Conn){
-	//
-}
 
 
-
-/*type compositeField struct {
-	name       string                 // name of the field
-	typeName   string                 // Postgres type name
-	defaultCodec pgtype.Codec // default value to use
-}
-
-func (tr *typeResolver) newCompositeValue(name string, fields ...compositeField) pgtype.Codec {
-	if _, codec, ok := tr.findCodec(name); ok {
-		return codec
-	}
-
-	codecs := make([]pgtype.CompositeCodecField, len(fields))
-	isBinaryOk := true
-	
-	for i, field := range fields {
-		oid, codec, ok := tr.findCodec(field.typeName)
-		if !ok {
-			oid = pgtype.UnknownOID
-			codec = field.defaultCodec
-		}
-		isBinaryOk = isBinaryOk && oid != pgtype.UnknownOID
+	// codec_newDevice is a codec for the composite type of the same name
+	func codec_newDevice(conn genericConn) (pgtype.Codec, error) {
 		
-		codecs[i] = pgtype.CompositeCodecField{
-			Name: field.name,
-			Type: &pgtype.Type{Codec: codec, Name: field.typeName, OID: oid},
+		    field0, ok := conn.TypeMap().TypeForName("macaddr")
+			if !ok {
+				return nil, fmt.Errorf("type not found: macaddr")
+			}
+		
+		    field1, ok := conn.TypeMap().TypeForName("device_type")
+			if !ok {
+				return nil, fmt.Errorf("type not found: device_type")
+			}
+		
+		
+		return &pgtype.CompositeCodec{
+			Fields: []pgtype.CompositeCodecField{
+				
+					{
+						Name: "mac",
+						Type: field0,
+					},
+				
+					{
+						Name: "type",
+						Type: field1,
+					},
+				
+			},
+		}, nil
+	}
+
+	func register_newDevice(
+		ctx context.Context,
+		conn genericConn,
+	) error {
+		t, err := conn.LoadType(
+			ctx,
+			"\"device\"",
+		)
+		if err != nil {
+			return fmt.Errorf("failed to load type for: %w", err)
 		}
-	}
-	// Okay to ignore error because it's only thrown when the number of field
-	// names does not equal the number of ValueTranscoders.
-	codec := pgtype.CompositeCodec{Fields: codecs}
-	// typ, _ := pgtype.NewCompositeTypeValues(name, fs, codecs)
-	// if !isBinaryOk {
-	// 	return textPreferrer{ValueTranscoder: typ, typeName: name}
-	// }
-	return codec
-}
+		
+		conn.TypeMap().RegisterType(t)
 
-func (tr *typeResolver) newArrayValue(name, elemName string, defaultVal func() pgtype.ValueTranscoder) pgtype.Codec {
-	if _, val, ok := tr.findCodec(name); ok {
-		return val
+		return nil
+	}
+
+	func init(){
+		addHook(register_newDevice) 
 	}
 	
-	pgType, ok := tr.pgMap.TypeForName(elemName)
-	if !ok {
-		panic("unhandled")
+
+
+	// codec_newDeviceTypeArray is a codec for the composite type of the same name
+	func codec_newDeviceTypeArray(conn genericConn) (pgtype.Codec, error) {
+		elementType, ok := conn.TypeMap().TypeForName("device_type")
+		if !ok {
+			return nil, fmt.Errorf("type not found: device_type")
+		}
+
+		return &pgtype.ArrayCodec{
+			ElementType: elementType,
+		}, nil
+	}
+
+	func register_newDeviceTypeArray(
+		ctx context.Context,
+		conn genericConn,
+	) error {
+		t, err := conn.LoadType(
+			ctx,
+			"\"_device_type\"",
+		)
+		if err != nil {
+			return fmt.Errorf("failed to load type for: %w", err)
+		}
+		
+		conn.TypeMap().RegisterType(t)
+
+		return nil
+	}
+
+	func init(){
+		addHook(register_newDeviceTypeArray) 
 	}
 	
-	return &pgtype.ArrayCodec{ElementType: pgType}
-}*/
-
-// newDevice creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'device'.
-func registernewDevice() pgtype.Codec {
-	return tr.newCompositeValue(
-		"device",
-		compositeField{name: "mac", typeName: "macaddr", defaultCodec: &pgtype.MacaddrCodec{}},
-		compositeField{name: "type", typeName: "device_type", defaultCodec: newDeviceTypeEnum()},
-	)
-}
-
-// newDeviceTypeArray creates a new pgtype.Codec for the Postgres
-// '_device_type' array type.
-func registernewDeviceTypeArray() pgtype.Codec {
-	return tr.newArrayValue("_device_type", "device_type", newDeviceTypeEnum)
-}
 
 const findAllDevicesSQL = `SELECT mac, type
 FROM device;`
 
 type FindAllDevicesRow struct {
-	Mac  pgtype.Macaddr `json:"mac"`
-	Type DeviceType     `json:"type"`
+	Mac  net.HardwareAddr `json:"mac"`
+	Type DeviceType       `json:"type"`
 }
 
 // FindAllDevices implements Querier.FindAllDevices.
@@ -180,7 +245,7 @@ func (q *DBQuerier) FindAllDevices(ctx context.Context) ([]FindAllDevicesRow, er
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (FindAllDevicesRow, error) {
 		var item FindAllDevicesRow
 		if err := row.Scan(
-			&item.Mac, // 'mac', 'Mac', 'pgtype.Macaddr', 'github.com/jackc/pgx/v5/pgtype', 'Macaddr'
+			&item.Mac, // 'mac', 'Mac', 'net.HardwareAddr', 'net', 'HardwareAddr'
 			&item.Type, // 'type', 'Type', 'DeviceType', 'github.com/robbert229/pggen/example/enums', 'DeviceType'
 		); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
@@ -193,7 +258,7 @@ const insertDeviceSQL = `INSERT INTO device (mac, type)
 VALUES ($1, $2);`
 
 // InsertDevice implements Querier.InsertDevice.
-func (q *DBQuerier) InsertDevice(ctx context.Context, mac pgtype.Macaddr, typePg DeviceType) (pgconn.CommandTag, error) {
+func (q *DBQuerier) InsertDevice(ctx context.Context, mac net.HardwareAddr, typePg DeviceType) (pgconn.CommandTag, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "InsertDevice")
 	cmdTag, err := q.conn.Exec(ctx, insertDeviceSQL, mac, typePg)
 	if err != nil {
@@ -294,59 +359,4 @@ func (q *DBQuerier) EnumInsideComposite(ctx context.Context) (Device, error) {
 		}
 		return item, nil
 	})
-}
-
-type scanCacheKey struct {
-	oid      uint32
-	format   int16
-	typeName string
-}
-
-var (
-	plans   = make(map[scanCacheKey]pgtype.ScanPlan, 16)
-	plansMu sync.RWMutex
-)
-
-func planScan(codec pgtype.Codec, fd pgconn.FieldDescription, target any) pgtype.ScanPlan {
-	key := scanCacheKey{fd.DataTypeOID, fd.Format, fmt.Sprintf("%T", target)}
-	plansMu.RLock()
-	plan := plans[key]
-	plansMu.RUnlock()
-	if plan != nil {
-		return plan
-	}
-	plan = codec.PlanScan(nil, fd.DataTypeOID, fd.Format, target)
-	plansMu.Lock()
-	plans[key] = plan
-	plansMu.Unlock()
-	return plan
-}
-
-type ptrScanner[T any] struct {
-	basePlan pgtype.ScanPlan
-}
-
-func (s ptrScanner[T]) Scan(src []byte, dst any) error {
-	if src == nil {
-		return nil
-	}
-	d := dst.(**T)
-	*d = new(T)
-	return s.basePlan.Scan(src, *d)
-}
-
-func planPtrScan[T any](codec pgtype.Codec, fd pgconn.FieldDescription, target *T) pgtype.ScanPlan {
-	key := scanCacheKey{fd.DataTypeOID, fd.Format, fmt.Sprintf("*%T", target)}
-	plansMu.RLock()
-	plan := plans[key]
-	plansMu.RUnlock()
-	if plan != nil {
-		return plan
-	}
-	basePlan := planScan(codec, fd, target)
-	ptrPlan := ptrScanner[T]{basePlan}
-	plansMu.Lock()
-	plans[key] = plan
-	plansMu.Unlock()
-	return ptrPlan
 }

@@ -4,6 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	gotok "go/token"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"time"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/robbert229/pggen/internal/ast"
 	"github.com/robbert229/pggen/internal/codegen"
@@ -12,11 +18,6 @@ import (
 	"github.com/robbert229/pggen/internal/parser"
 	"github.com/robbert229/pggen/internal/pgdocker"
 	"github.com/robbert229/pggen/internal/pginfer"
-	gotok "go/token"
-	"log/slog"
-	"os"
-	"path/filepath"
-	"time"
 )
 
 // Lang is a supported codegen language.
@@ -90,7 +91,11 @@ func Generate(opts GenerateOptions) (mErr error) {
 	defer errs.Capture(&mErr, cleanup, "close postgres connection")
 
 	// Parse queries.
-	inferrer := pginfer.NewInferrer(pgConn)
+	inferrer, err := pginfer.NewInferrer(ctx, pgConn)
+	if err != nil {
+		return fmt.Errorf("new inferrer: %w", err)
+	}
+
 	queryFiles, err := parseQueryFiles(opts.QueryFiles, inferrer)
 	if err != nil {
 		return errEnricher(err)

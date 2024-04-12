@@ -18,17 +18,17 @@ The following examples compile, and are implemented.
 * example/pgcrypto
 * example/slices
 * example/syntax
+* example/custom_types
+* example/composite
+* example/enums
+* example/device
+* example/function
+* example/nested
+* example/separate_out_dir/out
 
 # Feature Unsupported
 
 * example/complex_params
-* example/composite
-* example/custom_types
-* example/device
-* example/enums
 * example/erp/order
-* example/function
 * example/ltree
-* example/nested
-* example/separate_out_dir/out
 * example/void

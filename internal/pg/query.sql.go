@@ -7,7 +7,10 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+var _ genericConn = (*pgx.Conn)(nil)
 
 // Querier is a typesafe Go interface backed by SQL queries.
 type Querier interface {
@@ -34,7 +37,7 @@ type Querier interface {
 var _ Querier = &DBQuerier{}
 
 type DBQuerier struct {
-	conn genericConn // underlying Postgres transport to use
+	conn  genericConn
 }
 
 // genericConn is a connection like *pgx.Conn, pgx.Tx, or *pgxpool.Pool.
@@ -42,12 +45,41 @@ type genericConn interface {
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+
+	LoadType(ctx context.Context, typeName string) (*pgtype.Type, error)
+	TypeMap() *pgtype.Map
 }
 
 // NewQuerier creates a DBQuerier that implements Querier.
-func NewQuerier(conn genericConn) *DBQuerier {
-	return &DBQuerier{conn: conn}
+func NewQuerier(ctx context.Context, conn genericConn) (*DBQuerier, error) {
+	if err := register(ctx, conn); err != nil {
+		return nil, fmt.Errorf("failed to create new querier: %w", err)
+	}
+
+	return &DBQuerier{
+		conn: conn, 
+	}, nil
 }
+
+type typeHook func(ctx context.Context, conn genericConn) error
+
+var typeHooks []typeHook
+
+func addHook(hook typeHook) {
+	typeHooks = append(typeHooks, hook)
+}
+
+func register(ctx context.Context, conn genericConn) error {
+	for _, hook := range typeHooks {
+		if err := hook(ctx, conn); err != nil {
+			return err
+		}
+	}
+	
+	return nil
+}
+
+
 
 const findEnumTypesSQL = `WITH enums AS (
   SELECT
@@ -110,19 +142,22 @@ func (q *DBQuerier) FindEnumTypes(ctx context.Context, oids []uint32) ([]FindEnu
 	if err != nil {
 		return nil, fmt.Errorf("query FindEnumTypes: %w", err)
 	}
-	defer rows.Close()
-	items := []FindEnumTypesRow{}
-	for rows.Next() {
+
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (FindEnumTypesRow, error) {
 		var item FindEnumTypesRow
-		if err := rows.Scan(&item.OID, &item.TypeName, &item.ChildOIDs, &item.Orders, &item.Labels, &item.TypeKind, &item.DefaultExpr); err != nil {
-			return nil, fmt.Errorf("scan FindEnumTypes row: %w", err)
+		if err := row.Scan(
+			&item.OID, // 'oid', 'OID', 'uint32', '', 'uint32'
+			&item.TypeName, // 'type_name', 'TypeName', 'string', '', 'string'
+			&item.ChildOIDs, // 'child_oids', 'ChildOIDs', '[]int', '', '[]int'
+			&item.Orders, // 'orders', 'Orders', '[]float32', '', '[]float32'
+			&item.Labels, // 'labels', 'Labels', '[]string', '', '[]string'
+			&item.TypeKind, // 'type_kind', 'TypeKind', 'byte', '', 'byte'
+			&item.DefaultExpr, // 'default_expr', 'DefaultExpr', 'string', '', 'string'
+		); err != nil {
+			return item, fmt.Errorf("failed to scan: %w", err)
 		}
-		items = append(items, item)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindEnumTypes rows: %w", err)
-	}
-	return items, err
+		return item, nil
+	})
 }
 
 const findArrayTypesSQL = `SELECT
@@ -168,19 +203,19 @@ func (q *DBQuerier) FindArrayTypes(ctx context.Context, oids []uint32) ([]FindAr
 	if err != nil {
 		return nil, fmt.Errorf("query FindArrayTypes: %w", err)
 	}
-	defer rows.Close()
-	items := []FindArrayTypesRow{}
-	for rows.Next() {
+
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (FindArrayTypesRow, error) {
 		var item FindArrayTypesRow
-		if err := rows.Scan(&item.OID, &item.TypeName, &item.ElemOID, &item.TypeKind); err != nil {
-			return nil, fmt.Errorf("scan FindArrayTypes row: %w", err)
+		if err := row.Scan(
+			&item.OID, // 'oid', 'OID', 'uint32', '', 'uint32'
+			&item.TypeName, // 'type_name', 'TypeName', 'string', '', 'string'
+			&item.ElemOID, // 'elem_oid', 'ElemOID', 'uint32', '', 'uint32'
+			&item.TypeKind, // 'type_kind', 'TypeKind', 'byte', '', 'byte'
+		); err != nil {
+			return item, fmt.Errorf("failed to scan: %w", err)
 		}
-		items = append(items, item)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindArrayTypes rows: %w", err)
-	}
-	return items, err
+		return item, nil
+	})
 }
 
 const findCompositeTypesSQL = `WITH table_cols AS (
@@ -231,19 +266,23 @@ func (q *DBQuerier) FindCompositeTypes(ctx context.Context, oids []uint32) ([]Fi
 	if err != nil {
 		return nil, fmt.Errorf("query FindCompositeTypes: %w", err)
 	}
-	defer rows.Close()
-	items := []FindCompositeTypesRow{}
-	for rows.Next() {
+
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (FindCompositeTypesRow, error) {
 		var item FindCompositeTypesRow
-		if err := rows.Scan(&item.TableTypeName, &item.TableTypeOID, &item.TableName, &item.ColNames, &item.ColOIDs, &item.ColOrders, &item.ColNotNulls, &item.ColTypeNames); err != nil {
-			return nil, fmt.Errorf("scan FindCompositeTypes row: %w", err)
+		if err := row.Scan(
+			&item.TableTypeName, // 'table_type_name', 'TableTypeName', 'string', '', 'string'
+			&item.TableTypeOID, // 'table_type_oid', 'TableTypeOID', 'uint32', '', 'uint32'
+			&item.TableName, // 'table_name', 'TableName', 'string', '', 'string'
+			&item.ColNames, // 'col_names', 'ColNames', '[]string', '', '[]string'
+			&item.ColOIDs, // 'col_oids', 'ColOIDs', '[]int', '', '[]int'
+			&item.ColOrders, // 'col_orders', 'ColOrders', '[]int', '', '[]int'
+			&item.ColNotNulls, // 'col_not_nulls', 'ColNotNulls', '[]bool', '', '[]bool'
+			&item.ColTypeNames, // 'col_type_names', 'ColTypeNames', '[]string', '', '[]string'
+		); err != nil {
+			return item, fmt.Errorf("failed to scan: %w", err)
 		}
-		items = append(items, item)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindCompositeTypes rows: %w", err)
-	}
-	return items, err
+		return item, nil
+	})
 }
 
 const findDescendantOIDsSQL = `WITH RECURSIVE oid_descs(oid) AS (
@@ -281,19 +320,16 @@ func (q *DBQuerier) FindDescendantOIDs(ctx context.Context, oids []uint32) ([]ui
 	if err != nil {
 		return nil, fmt.Errorf("query FindDescendantOIDs: %w", err)
 	}
-	defer rows.Close()
-	items := []uint32{}
-	for rows.Next() {
+
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (uint32, error) {
 		var item uint32
-		if err := rows.Scan(&item); err != nil {
-			return nil, fmt.Errorf("scan FindDescendantOIDs row: %w", err)
+		if err := row.Scan(
+			&item,
+		); err != nil {
+			return item, fmt.Errorf("failed to scan: %w", err)
 		}
-		items = append(items, item)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindDescendantOIDs rows: %w", err)
-	}
-	return items, err
+		return item, nil
+	})
 }
 
 const findOIDByNameSQL = `SELECT oid
@@ -305,12 +341,20 @@ LIMIT 1;`
 // FindOIDByName implements Querier.FindOIDByName.
 func (q *DBQuerier) FindOIDByName(ctx context.Context, name string) (uint32, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindOIDByName")
-	row := q.conn.QueryRow(ctx, findOIDByNameSQL, name)
-	var item uint32
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query FindOIDByName: %w", err)
+	rows, err := q.conn.Query(ctx, findOIDByNameSQL, name)
+	if err != nil {
+		return 0, fmt.Errorf("query FindOIDByName: %w", err)
 	}
-	return item, nil
+
+	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (uint32, error) {
+		var item uint32
+		if err := row.Scan(
+			&item,
+		); err != nil {
+			return item, fmt.Errorf("failed to scan: %w", err)
+		}
+		return item, nil
+	})
 }
 
 const findOIDNameSQL = `SELECT typname AS name
@@ -320,12 +364,20 @@ WHERE oid = $1;`
 // FindOIDName implements Querier.FindOIDName.
 func (q *DBQuerier) FindOIDName(ctx context.Context, oid uint32) (string, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "FindOIDName")
-	row := q.conn.QueryRow(ctx, findOIDNameSQL, oid)
-	var item string
-	if err := row.Scan(&item); err != nil {
-		return item, fmt.Errorf("query FindOIDName: %w", err)
+	rows, err := q.conn.Query(ctx, findOIDNameSQL, oid)
+	if err != nil {
+		return "", fmt.Errorf("query FindOIDName: %w", err)
 	}
-	return item, nil
+
+	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (string, error) {
+		var item string
+		if err := row.Scan(
+			&item,
+		); err != nil {
+			return item, fmt.Errorf("failed to scan: %w", err)
+		}
+		return item, nil
+	})
 }
 
 const findOIDNamesSQL = `SELECT oid, typname AS name, typtype AS kind
@@ -345,17 +397,16 @@ func (q *DBQuerier) FindOIDNames(ctx context.Context, oid []uint32) ([]FindOIDNa
 	if err != nil {
 		return nil, fmt.Errorf("query FindOIDNames: %w", err)
 	}
-	defer rows.Close()
-	items := []FindOIDNamesRow{}
-	for rows.Next() {
+
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (FindOIDNamesRow, error) {
 		var item FindOIDNamesRow
-		if err := rows.Scan(&item.OID, &item.Name, &item.Kind); err != nil {
-			return nil, fmt.Errorf("scan FindOIDNames row: %w", err)
+		if err := row.Scan(
+			&item.OID, // 'oid', 'OID', 'uint32', '', 'uint32'
+			&item.Name, // 'name', 'Name', 'string', '', 'string'
+			&item.Kind, // 'kind', 'Kind', 'byte', '', 'byte'
+		); err != nil {
+			return item, fmt.Errorf("failed to scan: %w", err)
 		}
-		items = append(items, item)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("close FindOIDNames rows: %w", err)
-	}
-	return items, err
+		return item, nil
+	})
 }

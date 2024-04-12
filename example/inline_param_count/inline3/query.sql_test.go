@@ -3,8 +3,9 @@ package inline3
 import (
 	"context"
 	"errors"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/robbert229/pggen/internal/pgtest"
@@ -15,7 +16,8 @@ func TestNewQuerier_FindAuthorByID(t *testing.T) {
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"../schema.sql"})
 	defer cleanup()
 
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 	adamsID := insertAuthor(t, q, "john", "adams")
 	insertAuthor(t, q, "george", "washington")
 
@@ -49,7 +51,8 @@ func TestNewQuerier_FindAuthorByID(t *testing.T) {
 func TestNewQuerier_DeleteAuthorsByFullName(t *testing.T) {
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"../schema.sql"})
 	defer cleanup()
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 	insertAuthor(t, q, "george", "washington")
 
 	t.Run("DeleteAuthorsByFullName", func(t *testing.T) {

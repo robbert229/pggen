@@ -3,9 +3,10 @@ package author
 import (
 	"context"
 	"errors"
+	"testing"
+
 	"github.com/robbert229/pggen/internal/ptrs"
 	"github.com/stretchr/testify/require"
-	"testing"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/robbert229/pggen/internal/pgtest"
@@ -16,7 +17,8 @@ func TestNewQuerier_FindAuthorByID(t *testing.T) {
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
 
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 	adamsID := insertAuthor(t, q, "john", "adams")
 	insertAuthor(t, q, "george", "washington")
 
@@ -44,7 +46,8 @@ func TestNewQuerier_FindAuthorByID(t *testing.T) {
 func TestNewQuerier_FindAuthors(t *testing.T) {
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 	adamsID := insertAuthor(t, q, "john", "adams")
 	washingtonID := insertAuthor(t, q, "george", "washington")
 	carverID := insertAuthor(t, q, "george", "carver")
@@ -103,7 +106,8 @@ func TestNewQuerier_FindFirstNames(t *testing.T) {
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
 
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 	adamsID := insertAuthor(t, q, "john", "adams")
 	insertAuthor(t, q, "george", "washington")
 
@@ -117,7 +121,8 @@ func TestNewQuerier_FindFirstNames(t *testing.T) {
 func TestNewQuerier_InsertAuthorSuffix(t *testing.T) {
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 
 	t.Run("InsertAuthorSuffix", func(t *testing.T) {
 		author, err := q.InsertAuthorSuffix(context.Background(), InsertAuthorSuffixParams{
@@ -140,7 +145,8 @@ func TestNewQuerier_InsertAuthorSuffix(t *testing.T) {
 func TestNewQuerier_DeleteAuthorsByFirstName(t *testing.T) {
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 	insertAuthor(t, q, "john", "adams")
 	insertAuthor(t, q, "george", "washington")
 	insertAuthor(t, q, "george", "carver")
@@ -160,9 +166,11 @@ func TestNewQuerier_DeleteAuthorsByFirstName(t *testing.T) {
 func TestNewQuerier_DeleteAuthorsByFullName(t *testing.T) {
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 	washingtonID := insertAuthor(t, q, "george", "washington")
-	_, err := q.InsertAuthorSuffix(context.Background(), InsertAuthorSuffixParams{
+
+	_, err = q.InsertAuthorSuffix(context.Background(), InsertAuthorSuffixParams{
 		FirstName: "george",
 		LastName:  "washington",
 		Suffix:    "Jr.",
@@ -196,9 +204,11 @@ func TestNewQuerier_DeleteAuthorsByFullName(t *testing.T) {
 func TestNewQuerier_StringAggFirstName(t *testing.T) {
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 	washingtonID := insertAuthor(t, q, "george", "washington")
-	_, err := q.InsertAuthorSuffix(context.Background(), InsertAuthorSuffixParams{
+
+	_, err = q.InsertAuthorSuffix(context.Background(), InsertAuthorSuffixParams{
 		FirstName: "george",
 		LastName:  "washington",
 		Suffix:    "Jr.",
@@ -221,9 +231,10 @@ func TestNewQuerier_StringAggFirstName(t *testing.T) {
 func TestNewQuerier_ArrayAggFirstName(t *testing.T) {
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 	washingtonID := insertAuthor(t, q, "george", "washington")
-	_, err := q.InsertAuthorSuffix(context.Background(), InsertAuthorSuffixParams{
+	_, err = q.InsertAuthorSuffix(context.Background(), InsertAuthorSuffixParams{
 		FirstName: "george",
 		LastName:  "washington",
 		Suffix:    "Jr.",

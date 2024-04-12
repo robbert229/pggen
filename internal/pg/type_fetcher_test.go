@@ -2,13 +2,15 @@ package pg
 
 import (
 	"context"
+	"sort"
+	"testing"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/robbert229/pggen/internal/pg/pgoid"
 	"github.com/robbert229/pggen/internal/pgtest"
 	"github.com/robbert229/pggen/internal/texts"
-	"sort"
-	"testing"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewTypeFetcher(t *testing.T) {
@@ -189,10 +191,14 @@ func TestNewTypeFetcher(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			conn, cleanup := pgtest.NewPostgresSchemaString(t, tt.schema)
 			defer cleanup()
-			querier := NewQuerier(conn)
+
+			querier, err := NewQuerier(context.Background(), conn)
+			require.NoError(t, err)
 
 			// Act.
-			fetcher := NewTypeFetcher(conn)
+			fetcher, err := NewTypeFetcher(context.Background(), conn)
+			require.NoError(t, err)
+
 			oid := findOIDVal(t, tt.fetchOID, querier)
 			gotTypeMap, err := fetcher.FindTypesByOIDs(uint32(oid))
 			if err != nil {

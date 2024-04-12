@@ -67,7 +67,6 @@ func FindInputDeclarers(typ gotype.Type) DeclarerSet {
 			)
 		}
 	}
-	decls.AddAll(NewTypeResolverInitDeclarer()) // always add
 	findInputDeclsHelper(typ, decls)
 	// Inputs depend on output transcoders.
 	findOutputDeclsHelper(typ, decls /*hadCompositeParent*/, false)
@@ -102,7 +101,6 @@ func findInputDeclsHelper(typ gotype.Type, decls DeclarerSet) {
 // the output rows. Returns nil if no declarers are needed.
 func FindOutputDeclarers(typ gotype.Type) DeclarerSet {
 	decls := NewDeclarerSet()
-	decls.AddAll(NewTypeResolverInitDeclarer()) // always add
 	findOutputDeclsHelper(typ, decls, false)
 	return decls
 }
@@ -158,67 +156,7 @@ func NewConstantDeclarer(key, str string) ConstantDeclarer {
 func (c ConstantDeclarer) DedupeKey() string              { return c.key }
 func (c ConstantDeclarer) Declare(string) (string, error) { return c.str, nil }
 
-const typeResolverInitDecl = `
-func register(conn *pgx.Conn){
-	//
-}
-`
-
-// NewTypeResolverInitDeclarer declare type resolver init code always needed.
-func NewTypeResolverInitDeclarer() ConstantDeclarer {
-	return NewConstantDeclarer("type_resolver::00_common", typeResolverInitDecl)
-}
-
-const typeResolverBodyDecl = `
-/*type compositeField struct {
-	name       string                 // name of the field
-	typeName   string                 // Postgres type name
-	defaultCodec pgtype.Codec // default value to use
-}
-
-func (tr *typeResolver) newCompositeValue(name string, fields ...compositeField) pgtype.Codec {
-	if _, codec, ok := tr.findCodec(name); ok {
-		return codec
-	}
-
-	codecs := make([]pgtype.CompositeCodecField, len(fields))
-	isBinaryOk := true
-	
-	for i, field := range fields {
-		oid, codec, ok := tr.findCodec(field.typeName)
-		if !ok {
-			oid = pgtype.UnknownOID
-			codec = field.defaultCodec
-		}
-		isBinaryOk = isBinaryOk && oid != pgtype.UnknownOID
-		
-		codecs[i] = pgtype.CompositeCodecField{
-			Name: field.name,
-			Type: &pgtype.Type{Codec: codec, Name: field.typeName, OID: oid},
-		}
-	}
-	// Okay to ignore error because it's only thrown when the number of field
-	// names does not equal the number of ValueTranscoders.
-	codec := pgtype.CompositeCodec{Fields: codecs}
-	// typ, _ := pgtype.NewCompositeTypeValues(name, fs, codecs)
-	// if !isBinaryOk {
-	// 	return textPreferrer{ValueTranscoder: typ, typeName: name}
-	// }
-	return codec
-}
-
-func (tr *typeResolver) newArrayValue(name, elemName string, defaultVal func() pgtype.ValueTranscoder) pgtype.Codec {
-	if _, val, ok := tr.findCodec(name); ok {
-		return val
-	}
-	
-	pgType, ok := tr.pgMap.TypeForName(elemName)
-	if !ok {
-		panic("unhandled")
-	}
-	
-	return &pgtype.ArrayCodec{ElementType: pgType}
-}*/`
+const typeResolverBodyDecl = ``
 
 // NewTypeResolverDeclarer declares type resolver body code sometimes needed.
 func NewTypeResolverDeclarer() ConstantDeclarer {

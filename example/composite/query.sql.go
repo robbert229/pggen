@@ -8,8 +8,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
-	"sync"
 )
+
+var _ genericConn = (*pgx.Conn)(nil)
 
 // Querier is a typesafe Go interface backed by SQL queries.
 type Querier interface {
@@ -35,15 +36,38 @@ type genericConn interface {
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+
+	LoadType(ctx context.Context, typeName string) (*pgtype.Type, error)
+	TypeMap() *pgtype.Map
 }
 
 // NewQuerier creates a DBQuerier that implements Querier.
-func NewQuerier(conn *pgx.Conn) *DBQuerier {
-	_ = conn
+func NewQuerier(ctx context.Context, conn genericConn) (*DBQuerier, error) {
+	if err := register(ctx, conn); err != nil {
+		return nil, fmt.Errorf("failed to create new querier: %w", err)
+	}
 
 	return &DBQuerier{
 		conn: conn, 
+	}, nil
+}
+
+type typeHook func(ctx context.Context, conn genericConn) error
+
+var typeHooks []typeHook
+
+func addHook(hook typeHook) {
+	typeHooks = append(typeHooks, hook)
+}
+
+func register(ctx context.Context, conn genericConn) error {
+	for _, hook := range typeHooks {
+		if err := hook(ctx, conn); err != nil {
+			return err
+		}
 	}
+	
+	return nil
 }
 
 // Arrays represents the Postgres composite type "arrays".
@@ -68,73 +92,80 @@ type UserEmail struct {
 }
 
 
-func register(conn *pgx.Conn){
-	//
-}
 
 
-
-/*type compositeField struct {
-	name       string                 // name of the field
-	typeName   string                 // Postgres type name
-	defaultCodec pgtype.Codec // default value to use
-}
-
-func (tr *typeResolver) newCompositeValue(name string, fields ...compositeField) pgtype.Codec {
-	if _, codec, ok := tr.findCodec(name); ok {
-		return codec
-	}
-
-	codecs := make([]pgtype.CompositeCodecField, len(fields))
-	isBinaryOk := true
-	
-	for i, field := range fields {
-		oid, codec, ok := tr.findCodec(field.typeName)
-		if !ok {
-			oid = pgtype.UnknownOID
-			codec = field.defaultCodec
-		}
-		isBinaryOk = isBinaryOk && oid != pgtype.UnknownOID
+	// codec_newArrays is a codec for the composite type of the same name
+	func codec_newArrays(conn genericConn) (pgtype.Codec, error) {
 		
-		codecs[i] = pgtype.CompositeCodecField{
-			Name: field.name,
-			Type: &pgtype.Type{Codec: codec, Name: field.typeName, OID: oid},
+		    field0, ok := conn.TypeMap().TypeForName("_text")
+			if !ok {
+				return nil, fmt.Errorf("type not found: _text")
+			}
+		
+		    field1, ok := conn.TypeMap().TypeForName("_int8")
+			if !ok {
+				return nil, fmt.Errorf("type not found: _int8")
+			}
+		
+		    field2, ok := conn.TypeMap().TypeForName("_bool")
+			if !ok {
+				return nil, fmt.Errorf("type not found: _bool")
+			}
+		
+		    field3, ok := conn.TypeMap().TypeForName("_float8")
+			if !ok {
+				return nil, fmt.Errorf("type not found: _float8")
+			}
+		
+		
+		return &pgtype.CompositeCodec{
+			Fields: []pgtype.CompositeCodecField{
+				
+					{
+						Name: "texts",
+						Type: field0,
+					},
+				
+					{
+						Name: "int8s",
+						Type: field1,
+					},
+				
+					{
+						Name: "bools",
+						Type: field2,
+					},
+				
+					{
+						Name: "floats",
+						Type: field3,
+					},
+				
+			},
+		}, nil
+	}
+
+	func register_newArrays(
+		ctx context.Context,
+		conn genericConn,
+	) error {
+		t, err := conn.LoadType(
+			ctx,
+			"\"arrays\"",
+		)
+		if err != nil {
+			return fmt.Errorf("failed to load type for: %w", err)
 		}
-	}
-	// Okay to ignore error because it's only thrown when the number of field
-	// names does not equal the number of ValueTranscoders.
-	codec := pgtype.CompositeCodec{Fields: codecs}
-	// typ, _ := pgtype.NewCompositeTypeValues(name, fs, codecs)
-	// if !isBinaryOk {
-	// 	return textPreferrer{ValueTranscoder: typ, typeName: name}
-	// }
-	return codec
-}
+		
+		conn.TypeMap().RegisterType(t)
 
-func (tr *typeResolver) newArrayValue(name, elemName string, defaultVal func() pgtype.ValueTranscoder) pgtype.Codec {
-	if _, val, ok := tr.findCodec(name); ok {
-		return val
+		return nil
+	}
+
+	func init(){
+		addHook(register_newArrays) 
 	}
 	
-	pgType, ok := tr.pgMap.TypeForName(elemName)
-	if !ok {
-		panic("unhandled")
-	}
-	
-	return &pgtype.ArrayCodec{ElementType: pgType}
-}*/
-
-// newArrays creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'arrays'.
-func registernewArrays() pgtype.Codec {
-	return tr.newCompositeValue(
-		"arrays",
-		compositeField{name: "texts", typeName: "_text", defaultCodec: &pgtype.TextArray{}},
-		compositeField{name: "int8s", typeName: "_int8", defaultCodec: &pgtype.Int8Array{}},
-		compositeField{name: "bools", typeName: "_bool", defaultCodec: &pgtype.BoolArray{}},
-		compositeField{name: "floats", typeName: "_float8", defaultCodec: &pgtype.Float8Array{}},
-	)
-}
 
 // newArraysInit creates an initialized pgtype.ValueTranscoder for the
 // Postgres composite type 'arrays' to encode query parameters.
@@ -153,32 +184,158 @@ func registernewArraysRaw(v Arrays) []interface{} {
 	}
 }
 
-// newBlocks creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'blocks'.
-func registernewBlocks() pgtype.Codec {
-	return tr.newCompositeValue(
-		"blocks",
-		compositeField{name: "id", typeName: "int4", defaultCodec: &pgtype.Int4Codec{}},
-		compositeField{name: "screenshot_id", typeName: "int8", defaultCodec: &pgtype.Int8Codec{}},
-		compositeField{name: "body", typeName: "text", defaultCodec: &pgtype.TextCodec{}},
-	)
-}
 
-// newUserEmail creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'user_email'.
-func registernewUserEmail() pgtype.Codec {
-	return tr.newCompositeValue(
-		"user_email",
-		compositeField{name: "id", typeName: "text", defaultCodec: &pgtype.TextCodec{}},
-		compositeField{name: "email", typeName: "citext", defaultCodec: &pgtype.TextCodec{}},
-	)
-}
+	// codec_newBlocks is a codec for the composite type of the same name
+	func codec_newBlocks(conn genericConn) (pgtype.Codec, error) {
+		
+		    field0, ok := conn.TypeMap().TypeForName("int4")
+			if !ok {
+				return nil, fmt.Errorf("type not found: int4")
+			}
+		
+		    field1, ok := conn.TypeMap().TypeForName("int8")
+			if !ok {
+				return nil, fmt.Errorf("type not found: int8")
+			}
+		
+		    field2, ok := conn.TypeMap().TypeForName("text")
+			if !ok {
+				return nil, fmt.Errorf("type not found: text")
+			}
+		
+		
+		return &pgtype.CompositeCodec{
+			Fields: []pgtype.CompositeCodecField{
+				
+					{
+						Name: "id",
+						Type: field0,
+					},
+				
+					{
+						Name: "screenshot_id",
+						Type: field1,
+					},
+				
+					{
+						Name: "body",
+						Type: field2,
+					},
+				
+			},
+		}, nil
+	}
 
-// newBlocksArray creates a new pgtype.Codec for the Postgres
-// '_blocks' array type.
-func registernewBlocksArray() pgtype.Codec {
-	return tr.newArrayValue("_blocks", "blocks", tr.newBlocks)
-}
+	func register_newBlocks(
+		ctx context.Context,
+		conn genericConn,
+	) error {
+		t, err := conn.LoadType(
+			ctx,
+			"\"blocks\"",
+		)
+		if err != nil {
+			return fmt.Errorf("failed to load type for: %w", err)
+		}
+		
+		conn.TypeMap().RegisterType(t)
+
+		return nil
+	}
+
+	func init(){
+		addHook(register_newBlocks) 
+	}
+	
+
+
+	// codec_newUserEmail is a codec for the composite type of the same name
+	func codec_newUserEmail(conn genericConn) (pgtype.Codec, error) {
+		
+		    field0, ok := conn.TypeMap().TypeForName("text")
+			if !ok {
+				return nil, fmt.Errorf("type not found: text")
+			}
+		
+		    field1, ok := conn.TypeMap().TypeForName("citext")
+			if !ok {
+				return nil, fmt.Errorf("type not found: citext")
+			}
+		
+		
+		return &pgtype.CompositeCodec{
+			Fields: []pgtype.CompositeCodecField{
+				
+					{
+						Name: "id",
+						Type: field0,
+					},
+				
+					{
+						Name: "email",
+						Type: field1,
+					},
+				
+			},
+		}, nil
+	}
+
+	func register_newUserEmail(
+		ctx context.Context,
+		conn genericConn,
+	) error {
+		t, err := conn.LoadType(
+			ctx,
+			"\"user_email\"",
+		)
+		if err != nil {
+			return fmt.Errorf("failed to load type for: %w", err)
+		}
+		
+		conn.TypeMap().RegisterType(t)
+
+		return nil
+	}
+
+	func init(){
+		addHook(register_newUserEmail) 
+	}
+	
+
+
+	// codec_newBlocksArray is a codec for the composite type of the same name
+	func codec_newBlocksArray(conn genericConn) (pgtype.Codec, error) {
+		elementType, ok := conn.TypeMap().TypeForName("blocks")
+		if !ok {
+			return nil, fmt.Errorf("type not found: blocks")
+		}
+
+		return &pgtype.ArrayCodec{
+			ElementType: elementType,
+		}, nil
+	}
+
+	func register_newBlocksArray(
+		ctx context.Context,
+		conn genericConn,
+	) error {
+		t, err := conn.LoadType(
+			ctx,
+			"\"_blocks\"",
+		)
+		if err != nil {
+			return fmt.Errorf("failed to load type for: %w", err)
+		}
+		
+		conn.TypeMap().RegisterType(t)
+
+		return nil
+	}
+
+	func init(){
+		addHook(register_newBlocksArray) 
+	}
+	
 
 // newboolArrayRaw returns all elements for the Postgres array type '_bool'
 // as a slice of interface{} for use with the pgtype.Value Set method.
@@ -341,59 +498,4 @@ func (q *DBQuerier) UserEmails(ctx context.Context) (UserEmail, error) {
 		}
 		return item, nil
 	})
-}
-
-type scanCacheKey struct {
-	oid      uint32
-	format   int16
-	typeName string
-}
-
-var (
-	plans   = make(map[scanCacheKey]pgtype.ScanPlan, 16)
-	plansMu sync.RWMutex
-)
-
-func planScan(codec pgtype.Codec, fd pgconn.FieldDescription, target any) pgtype.ScanPlan {
-	key := scanCacheKey{fd.DataTypeOID, fd.Format, fmt.Sprintf("%T", target)}
-	plansMu.RLock()
-	plan := plans[key]
-	plansMu.RUnlock()
-	if plan != nil {
-		return plan
-	}
-	plan = codec.PlanScan(nil, fd.DataTypeOID, fd.Format, target)
-	plansMu.Lock()
-	plans[key] = plan
-	plansMu.Unlock()
-	return plan
-}
-
-type ptrScanner[T any] struct {
-	basePlan pgtype.ScanPlan
-}
-
-func (s ptrScanner[T]) Scan(src []byte, dst any) error {
-	if src == nil {
-		return nil
-	}
-	d := dst.(**T)
-	*d = new(T)
-	return s.basePlan.Scan(src, *d)
-}
-
-func planPtrScan[T any](codec pgtype.Codec, fd pgconn.FieldDescription, target *T) pgtype.ScanPlan {
-	key := scanCacheKey{fd.DataTypeOID, fd.Format, fmt.Sprintf("*%T", target)}
-	plansMu.RLock()
-	plan := plans[key]
-	plansMu.RUnlock()
-	if plan != nil {
-		return plan
-	}
-	basePlan := planScan(codec, fd, target)
-	ptrPlan := ptrScanner[T]{basePlan}
-	plansMu.Lock()
-	plans[key] = plan
-	plansMu.Unlock()
-	return ptrPlan
 }

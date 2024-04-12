@@ -3,6 +3,7 @@ package golang
 import (
 	"strconv"
 	"strings"
+	"text/template"
 
 	"github.com/robbert229/pggen/internal/codegen/golang/gotype"
 )
@@ -84,39 +85,58 @@ func (e EnumTranscoderDeclarer) DedupeKey() string {
 }
 
 func (e EnumTranscoderDeclarer) Declare(string) (string, error) {
+	t := template.New("enum")
+	t = template.Must(t.Parse(`
+// register_{{ .FuncName }} registers the given postgres type with pgx.
+func register_{{ .FuncName }}(
+	ctx context.Context,
+	conn genericConn,
+) error {
+	t, err := conn.LoadType(
+		ctx,
+		{{ .PgEnumName }},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to load type for: %w", err)
+	}
+	
+	conn.TypeMap().RegisterType(t)
+	
+	t, err = conn.LoadType(
+		ctx,
+		{{ .PgEnumArrayName }},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to load type for: %w", err)
+	}
+	
+	conn.TypeMap().RegisterType(t)
+	
+	return nil
+}
+
+func codec_{{ .FuncName }}(conn genericConn) (pgtype.Codec, error) {
+	return &pgtype.EnumCodec{}, nil
+}
+
+func init(){
+	addHook(register_{{ .FuncName }}) 
+}
+`))
 	sb := &strings.Builder{}
 	funcName := NameEnumCodecFunc(e.typ)
 
-	// Doc comment
-	sb.WriteString("// ")
-	sb.WriteString(funcName)
-	sb.WriteString(" creates a new pgtype.ValueTranscoder for the\n")
-	sb.WriteString("// Postgres enum type '")
-	sb.WriteString(e.typ.PgEnum.Name)
-	sb.WriteString("'.\n")
-
-	// Function signature
-	sb.WriteString("func register")
-	sb.WriteString(funcName)
-	sb.WriteString("() pgtype.ValueTranscoder {\n\t")
-
-	// NewEnumType call
-	sb.WriteString("return pgtype.NewEnumType(\n\t\t")
-	sb.WriteString(strconv.Quote(e.typ.PgEnum.Name))
-	sb.WriteString(",\n\t\t")
-	sb.WriteString(`[]string{`)
-	for _, label := range e.typ.Labels {
-		sb.WriteString("\n\t\t\t")
-		sb.WriteString("string(")
-		sb.WriteString(label)
-		sb.WriteString("),")
+	if err := t.Execute(sb, struct {
+		FuncName        string
+		PgEnumArrayName string
+		PgEnumName      string
+	}{
+		FuncName:        funcName,
+		PgEnumName:      strconv.Quote(strconv.Quote(e.typ.PgEnum.Name)),
+		PgEnumArrayName: strconv.Quote("_" + e.typ.PgEnum.Name),
+	}); err != nil {
+		return "", err
 	}
-	sb.WriteString("\n\t\t")
-	sb.WriteString("},")
-	sb.WriteString("\n\t")
-	sb.WriteString(")")
-	sb.WriteString("\n")
-	sb.WriteString("}")
 
 	return sb.String(), nil
 }

@@ -14,7 +14,8 @@ import (
 func TestQuerier_CustomTypes(t *testing.T) {
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 	ctx := context.Background()
 
 	t.Run("CustomTypes", func(t *testing.T) {
@@ -39,18 +40,19 @@ func TestQuerier_CustomMyInt(t *testing.T) {
 			AND pn.nspname = current_schema()
 		LIMIT 1;
 	`))
-	oidVal := uint32Value{}
+	oidVal := uint32(0)
 	err := row.Scan(&oidVal)
 	require.NoError(t, err)
-	t.Logf("my_int oid: %d", oidVal.Uint)
+	t.Logf("my_int oid: %d", oidVal)
 
-	conn.ConnInfo().RegisterDataType(pgtype.DataType{
-		Value: &pgtype.Int2{},
+	conn.TypeMap().RegisterType(&pgtype.Type{
+		Codec: &pgtype.Int2Codec{},
 		Name:  "my_int",
-		OID:   oidVal.Uint,
+		OID:   oidVal,
 	})
 
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 	ctx := context.Background()
 
 	t.Run("CustomMyInt", func(t *testing.T) {
@@ -63,7 +65,8 @@ func TestQuerier_CustomMyInt(t *testing.T) {
 func TestQuerier_IntArray(t *testing.T) {
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
-	q := NewQuerier(conn)
+	q, err := NewQuerier(context.Background(), conn)
+	require.NoError(t, err)
 	ctx := context.Background()
 
 	t.Run("IntArray", func(t *testing.T) {

@@ -8,8 +8,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
-	"sync"
 )
+
+var _ genericConn = (*pgx.Conn)(nil)
 
 // Querier is a typesafe Go interface backed by SQL queries.
 type Querier interface {
@@ -35,15 +36,38 @@ type genericConn interface {
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+
+	LoadType(ctx context.Context, typeName string) (*pgtype.Type, error)
+	TypeMap() *pgtype.Map
 }
 
 // NewQuerier creates a DBQuerier that implements Querier.
-func NewQuerier(conn *pgx.Conn) *DBQuerier {
-	_ = conn
+func NewQuerier(ctx context.Context, conn genericConn) (*DBQuerier, error) {
+	if err := register(ctx, conn); err != nil {
+		return nil, fmt.Errorf("failed to create new querier: %w", err)
+	}
 
 	return &DBQuerier{
 		conn: conn, 
+	}, nil
+}
+
+type typeHook func(ctx context.Context, conn genericConn) error
+
+var typeHooks []typeHook
+
+func addHook(hook typeHook) {
+	typeHooks = append(typeHooks, hook)
+}
+
+func register(ctx context.Context, conn genericConn) error {
+	for _, hook := range typeHooks {
+		if err := hook(ctx, conn); err != nil {
+			return err
+		}
 	}
+	
+	return nil
 }
 
 // Dimensions represents the Postgres composite type "dimensions".
@@ -66,71 +90,60 @@ type ProductImageType struct {
 }
 
 
-func register(conn *pgx.Conn){
-	//
-}
 
 
-
-/*type compositeField struct {
-	name       string                 // name of the field
-	typeName   string                 // Postgres type name
-	defaultCodec pgtype.Codec // default value to use
-}
-
-func (tr *typeResolver) newCompositeValue(name string, fields ...compositeField) pgtype.Codec {
-	if _, codec, ok := tr.findCodec(name); ok {
-		return codec
-	}
-
-	codecs := make([]pgtype.CompositeCodecField, len(fields))
-	isBinaryOk := true
-	
-	for i, field := range fields {
-		oid, codec, ok := tr.findCodec(field.typeName)
-		if !ok {
-			oid = pgtype.UnknownOID
-			codec = field.defaultCodec
-		}
-		isBinaryOk = isBinaryOk && oid != pgtype.UnknownOID
+	// codec_newDimensions is a codec for the composite type of the same name
+	func codec_newDimensions(conn genericConn) (pgtype.Codec, error) {
 		
-		codecs[i] = pgtype.CompositeCodecField{
-			Name: field.name,
-			Type: &pgtype.Type{Codec: codec, Name: field.typeName, OID: oid},
+		    field0, ok := conn.TypeMap().TypeForName("int4")
+			if !ok {
+				return nil, fmt.Errorf("type not found: int4")
+			}
+		
+		    field1, ok := conn.TypeMap().TypeForName("int4")
+			if !ok {
+				return nil, fmt.Errorf("type not found: int4")
+			}
+		
+		
+		return &pgtype.CompositeCodec{
+			Fields: []pgtype.CompositeCodecField{
+				
+					{
+						Name: "width",
+						Type: field0,
+					},
+				
+					{
+						Name: "height",
+						Type: field1,
+					},
+				
+			},
+		}, nil
+	}
+
+	func register_newDimensions(
+		ctx context.Context,
+		conn genericConn,
+	) error {
+		t, err := conn.LoadType(
+			ctx,
+			"\"dimensions\"",
+		)
+		if err != nil {
+			return fmt.Errorf("failed to load type for: %w", err)
 		}
-	}
-	// Okay to ignore error because it's only thrown when the number of field
-	// names does not equal the number of ValueTranscoders.
-	codec := pgtype.CompositeCodec{Fields: codecs}
-	// typ, _ := pgtype.NewCompositeTypeValues(name, fs, codecs)
-	// if !isBinaryOk {
-	// 	return textPreferrer{ValueTranscoder: typ, typeName: name}
-	// }
-	return codec
-}
+		
+		conn.TypeMap().RegisterType(t)
 
-func (tr *typeResolver) newArrayValue(name, elemName string, defaultVal func() pgtype.ValueTranscoder) pgtype.Codec {
-	if _, val, ok := tr.findCodec(name); ok {
-		return val
+		return nil
+	}
+
+	func init(){
+		addHook(register_newDimensions) 
 	}
 	
-	pgType, ok := tr.pgMap.TypeForName(elemName)
-	if !ok {
-		panic("unhandled")
-	}
-	
-	return &pgtype.ArrayCodec{ElementType: pgType}
-}*/
-
-// newDimensions creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'dimensions'.
-func registernewDimensions() pgtype.Codec {
-	return tr.newCompositeValue(
-		"dimensions",
-		compositeField{name: "width", typeName: "int4", defaultCodec: &pgtype.Int4Codec{}},
-		compositeField{name: "height", typeName: "int4", defaultCodec: &pgtype.Int4Codec{}},
-	)
-}
 
 // newDimensionsInit creates an initialized pgtype.ValueTranscoder for the
 // Postgres composite type 'dimensions' to encode query parameters.
@@ -147,16 +160,69 @@ func registernewDimensionsRaw(v Dimensions) []interface{} {
 	}
 }
 
-// newProductImageSetType creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'product_image_set_type'.
-func registernewProductImageSetType() pgtype.Codec {
-	return tr.newCompositeValue(
-		"product_image_set_type",
-		compositeField{name: "name", typeName: "text", defaultCodec: &pgtype.TextCodec{}},
-		compositeField{name: "orig_image", typeName: "product_image_type", defaultCodec: tr.newProductImageType()},
-		compositeField{name: "images", typeName: "_product_image_type", defaultCodec: tr.newProductImageTypeArray()},
-	)
-}
+
+	// codec_newProductImageSetType is a codec for the composite type of the same name
+	func codec_newProductImageSetType(conn genericConn) (pgtype.Codec, error) {
+		
+		    field0, ok := conn.TypeMap().TypeForName("text")
+			if !ok {
+				return nil, fmt.Errorf("type not found: text")
+			}
+		
+		    field1, ok := conn.TypeMap().TypeForName("product_image_type")
+			if !ok {
+				return nil, fmt.Errorf("type not found: product_image_type")
+			}
+		
+		    field2, ok := conn.TypeMap().TypeForName("_product_image_type")
+			if !ok {
+				return nil, fmt.Errorf("type not found: _product_image_type")
+			}
+		
+		
+		return &pgtype.CompositeCodec{
+			Fields: []pgtype.CompositeCodecField{
+				
+					{
+						Name: "name",
+						Type: field0,
+					},
+				
+					{
+						Name: "orig_image",
+						Type: field1,
+					},
+				
+					{
+						Name: "images",
+						Type: field2,
+					},
+				
+			},
+		}, nil
+	}
+
+	func register_newProductImageSetType(
+		ctx context.Context,
+		conn genericConn,
+	) error {
+		t, err := conn.LoadType(
+			ctx,
+			"\"product_image_set_type\"",
+		)
+		if err != nil {
+			return fmt.Errorf("failed to load type for: %w", err)
+		}
+		
+		conn.TypeMap().RegisterType(t)
+
+		return nil
+	}
+
+	func init(){
+		addHook(register_newProductImageSetType) 
+	}
+	
 
 // newProductImageSetTypeInit creates an initialized pgtype.ValueTranscoder for the
 // Postgres composite type 'product_image_set_type' to encode query parameters.
@@ -174,15 +240,59 @@ func registernewProductImageSetTypeRaw(v ProductImageSetType) []interface{} {
 	}
 }
 
-// newProductImageType creates a new pgtype.ValueTranscoder for the Postgres
-// composite type 'product_image_type'.
-func registernewProductImageType() pgtype.Codec {
-	return tr.newCompositeValue(
-		"product_image_type",
-		compositeField{name: "source", typeName: "text", defaultCodec: &pgtype.TextCodec{}},
-		compositeField{name: "dimensions", typeName: "dimensions", defaultCodec: tr.newDimensions()},
-	)
-}
+
+	// codec_newProductImageType is a codec for the composite type of the same name
+	func codec_newProductImageType(conn genericConn) (pgtype.Codec, error) {
+		
+		    field0, ok := conn.TypeMap().TypeForName("text")
+			if !ok {
+				return nil, fmt.Errorf("type not found: text")
+			}
+		
+		    field1, ok := conn.TypeMap().TypeForName("dimensions")
+			if !ok {
+				return nil, fmt.Errorf("type not found: dimensions")
+			}
+		
+		
+		return &pgtype.CompositeCodec{
+			Fields: []pgtype.CompositeCodecField{
+				
+					{
+						Name: "source",
+						Type: field0,
+					},
+				
+					{
+						Name: "dimensions",
+						Type: field1,
+					},
+				
+			},
+		}, nil
+	}
+
+	func register_newProductImageType(
+		ctx context.Context,
+		conn genericConn,
+	) error {
+		t, err := conn.LoadType(
+			ctx,
+			"\"product_image_type\"",
+		)
+		if err != nil {
+			return fmt.Errorf("failed to load type for: %w", err)
+		}
+		
+		conn.TypeMap().RegisterType(t)
+
+		return nil
+	}
+
+	func init(){
+		addHook(register_newProductImageType) 
+	}
+	
 
 // newProductImageTypeInit creates an initialized pgtype.ValueTranscoder for the
 // Postgres composite type 'product_image_type' to encode query parameters.
@@ -199,11 +309,40 @@ func registernewProductImageTypeRaw(v ProductImageType) []interface{} {
 	}
 }
 
-// newProductImageTypeArray creates a new pgtype.Codec for the Postgres
-// '_product_image_type' array type.
-func registernewProductImageTypeArray() pgtype.Codec {
-	return tr.newArrayValue("_product_image_type", "product_image_type", tr.newProductImageType)
-}
+
+	// codec_newProductImageTypeArray is a codec for the composite type of the same name
+	func codec_newProductImageTypeArray(conn genericConn) (pgtype.Codec, error) {
+		elementType, ok := conn.TypeMap().TypeForName("product_image_type")
+		if !ok {
+			return nil, fmt.Errorf("type not found: product_image_type")
+		}
+
+		return &pgtype.ArrayCodec{
+			ElementType: elementType,
+		}, nil
+	}
+
+	func register_newProductImageTypeArray(
+		ctx context.Context,
+		conn genericConn,
+	) error {
+		t, err := conn.LoadType(
+			ctx,
+			"\"_product_image_type\"",
+		)
+		if err != nil {
+			return fmt.Errorf("failed to load type for: %w", err)
+		}
+		
+		conn.TypeMap().RegisterType(t)
+
+		return nil
+	}
+
+	func init(){
+		addHook(register_newProductImageTypeArray) 
+	}
+	
 
 // newProductImageTypeArrayInit creates an initialized pgtype.ValueTranscoder for the
 // Postgres array type '_product_image_type' to encode query parameters.
@@ -328,59 +467,4 @@ func (q *DBQuerier) ParamNested3(ctx context.Context, imageSet ProductImageSetTy
 		}
 		return item, nil
 	})
-}
-
-type scanCacheKey struct {
-	oid      uint32
-	format   int16
-	typeName string
-}
-
-var (
-	plans   = make(map[scanCacheKey]pgtype.ScanPlan, 16)
-	plansMu sync.RWMutex
-)
-
-func planScan(codec pgtype.Codec, fd pgconn.FieldDescription, target any) pgtype.ScanPlan {
-	key := scanCacheKey{fd.DataTypeOID, fd.Format, fmt.Sprintf("%T", target)}
-	plansMu.RLock()
-	plan := plans[key]
-	plansMu.RUnlock()
-	if plan != nil {
-		return plan
-	}
-	plan = codec.PlanScan(nil, fd.DataTypeOID, fd.Format, target)
-	plansMu.Lock()
-	plans[key] = plan
-	plansMu.Unlock()
-	return plan
-}
-
-type ptrScanner[T any] struct {
-	basePlan pgtype.ScanPlan
-}
-
-func (s ptrScanner[T]) Scan(src []byte, dst any) error {
-	if src == nil {
-		return nil
-	}
-	d := dst.(**T)
-	*d = new(T)
-	return s.basePlan.Scan(src, *d)
-}
-
-func planPtrScan[T any](codec pgtype.Codec, fd pgconn.FieldDescription, target *T) pgtype.ScanPlan {
-	key := scanCacheKey{fd.DataTypeOID, fd.Format, fmt.Sprintf("*%T", target)}
-	plansMu.RLock()
-	plan := plans[key]
-	plansMu.RUnlock()
-	if plan != nil {
-		return plan
-	}
-	basePlan := planScan(codec, fd, target)
-	ptrPlan := ptrScanner[T]{basePlan}
-	plansMu.Lock()
-	plans[key] = plan
-	plansMu.Unlock()
-	return ptrPlan
 }
