@@ -53,7 +53,7 @@ func FindInputDeclarers(typ gotype.Type) DeclarerSet {
 	case *gotype.CompositeType:
 		decls.AddAll(
 			NewTypeResolverDeclarer(),
-			NewCompositeInitDeclarer(typ),
+			// NewCompositeInitDeclarer(typ),
 		)
 	case *gotype.ArrayType:
 		if gotype.IsPgxSupportedArray(typ) {
@@ -63,7 +63,6 @@ func FindInputDeclarers(typ gotype.Type) DeclarerSet {
 		case *gotype.CompositeType, *gotype.EnumType:
 			decls.AddAll(
 				NewTypeResolverDeclarer(),
-				NewArrayInitDeclarer(typ),
 			)
 		}
 	}
@@ -77,7 +76,7 @@ func findInputDeclsHelper(typ gotype.Type, decls DeclarerSet) {
 	switch typ := gotype.UnwrapNestedType(typ).(type) {
 	case *gotype.CompositeType:
 		decls.AddAll(
-			NewCompositeRawDeclarer(typ),
+		// NewCompositeRawDeclarer(typ),
 		)
 		for _, childType := range typ.FieldTypes {
 			findInputDeclsHelper(childType, decls)
@@ -87,9 +86,7 @@ func findInputDeclsHelper(typ gotype.Type, decls DeclarerSet) {
 		if gotype.IsPgxSupportedArray(typ) {
 			return
 		}
-		decls.AddAll(
-			NewArrayRawDeclarer(typ),
-		)
+		decls.AddAll()
 		findInputDeclsHelper(typ.Elem, decls)
 
 	default:

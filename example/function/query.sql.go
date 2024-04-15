@@ -62,6 +62,8 @@ func register(ctx context.Context, conn genericConn) error {
 	return nil
 }
 
+
+
 // ListItem represents the Postgres composite type "list_item".
 type ListItem struct {
 	Name  *string `json:"name"`
@@ -117,7 +119,7 @@ type ListStats struct {
 			"\"list_item\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newListItem failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -171,7 +173,7 @@ type ListStats struct {
 			"\"list_stats\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newListStats failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -206,7 +208,7 @@ type ListStats struct {
 			"\"_list_item\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newListItemArray failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -236,10 +238,9 @@ func (q *DBQuerier) OutParams(ctx context.Context) ([]OutParamsRow, error) {
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (OutParamsRow, error) {
 		var item OutParamsRow
-		if err := row.Scan(
-			&item.Items, // '_items', 'Items', '[]ListItem', 'github.com/robbert229/pggen/example/function', '[]ListItem'
+		if err := row.Scan(&item.Items, // '_items', 'Items', '[]ListItem', 'github.com/robbert229/pggen/example/function', '[]ListItem'
 			&item.Stats, // '_stats', 'Stats', 'ListStats', 'github.com/robbert229/pggen/example/function', 'ListStats'
-		); err != nil {
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil

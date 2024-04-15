@@ -71,15 +71,7 @@ func register(ctx context.Context, conn genericConn) error {
 
 
 
-// newboolArrayRaw returns all elements for the Postgres array type '_bool'
-// as a slice of interface{} for use with the pgtype.Value Set method.
-func registernewboolArrayRaw(vs []bool) []interface{} {
-	elems := make([]interface{}, len(vs))
-	for i, v := range vs {
-		elems[i] = v
-	}
-	return elems
-}
+
 
 const getBoolsSQL = `SELECT $1::boolean[];`
 
@@ -93,9 +85,8 @@ func (q *DBQuerier) GetBools(ctx context.Context, data []bool) ([]bool, error) {
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) ([]bool, error) {
 		var item []bool
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -114,9 +105,8 @@ func (q *DBQuerier) GetOneTimestamp(ctx context.Context, data *time.Time) (*time
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (*time.Time, error) {
 		var item *time.Time
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -136,9 +126,8 @@ func (q *DBQuerier) GetManyTimestamptzs(ctx context.Context, data []time.Time) (
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (*time.Time, error) {
 		var item *time.Time
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -158,9 +147,8 @@ func (q *DBQuerier) GetManyTimestamps(ctx context.Context, data []*time.Time) ([
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (*time.Time, error) {
 		var item *time.Time
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil

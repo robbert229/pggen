@@ -70,6 +70,8 @@ func register(ctx context.Context, conn genericConn) error {
 	return nil
 }
 
+
+
 // Arrays represents the Postgres composite type "arrays".
 type Arrays struct {
 	Texts  []string   `json:"texts"`
@@ -154,7 +156,7 @@ type UserEmail struct {
 			"\"arrays\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newArrays failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -166,23 +168,6 @@ type UserEmail struct {
 		addHook(register_newArrays) 
 	}
 	
-
-// newArraysInit creates an initialized pgtype.ValueTranscoder for the
-// Postgres composite type 'arrays' to encode query parameters.
-func registernewArraysInit(v Arrays) pgtype.Codec {
-	return tr.setCodec(tr.newArrays(), tr.newArraysRaw(v))
-}
-
-// newArraysRaw returns all composite fields for the Postgres composite
-// type 'arrays' as a slice of interface{} to encode query parameters.
-func registernewArraysRaw(v Arrays) []interface{} {
-	return []interface{}{
-		v.Texts,
-		v.Int8s,
-		v.Bools,
-		v.Floats,
-	}
-}
 
 
 	// codec_newBlocks is a codec for the composite type of the same name
@@ -235,7 +220,7 @@ func registernewArraysRaw(v Arrays) []interface{} {
 			"\"blocks\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newBlocks failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -289,7 +274,8 @@ func registernewArraysRaw(v Arrays) []interface{} {
 			"\"user_email\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			pgx.
+			return fmt.Errorf("newUserEmail failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -324,7 +310,7 @@ func registernewArraysRaw(v Arrays) []interface{} {
 			"\"_blocks\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newBlocksArray failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -336,16 +322,6 @@ func registernewArraysRaw(v Arrays) []interface{} {
 		addHook(register_newBlocksArray) 
 	}
 	
-
-// newboolArrayRaw returns all elements for the Postgres array type '_bool'
-// as a slice of interface{} for use with the pgtype.Value Set method.
-func registernewboolArrayRaw(vs []bool) []interface{} {
-	elems := make([]interface{}, len(vs))
-	for i, v := range vs {
-		elems[i] = v
-	}
-	return elems
-}
 
 const searchScreenshotsSQL = `SELECT
   ss.id,
@@ -378,10 +354,9 @@ func (q *DBQuerier) SearchScreenshots(ctx context.Context, params SearchScreensh
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (SearchScreenshotsRow, error) {
 		var item SearchScreenshotsRow
-		if err := row.Scan(
-			&item.ID, // 'id', 'ID', 'int', '', 'int'
+		if err := row.Scan(&item.ID, // 'id', 'ID', 'int', '', 'int'
 			&item.Blocks, // 'blocks', 'Blocks', '[]Blocks', 'github.com/robbert229/pggen/example/composite', '[]Blocks'
-		); err != nil {
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -413,9 +388,8 @@ func (q *DBQuerier) SearchScreenshotsOneCol(ctx context.Context, params SearchSc
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) ([]Blocks, error) {
 		var item []Blocks
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -447,11 +421,10 @@ func (q *DBQuerier) InsertScreenshotBlocks(ctx context.Context, screenshotID int
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (InsertScreenshotBlocksRow, error) {
 		var item InsertScreenshotBlocksRow
-		if err := row.Scan(
-			&item.ID, // 'id', 'ID', 'int', '', 'int'
+		if err := row.Scan(&item.ID, // 'id', 'ID', 'int', '', 'int'
 			&item.ScreenshotID, // 'screenshot_id', 'ScreenshotID', 'int', '', 'int'
 			&item.Body, // 'body', 'Body', 'string', '', 'string'
-		); err != nil {
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -463,16 +436,15 @@ const arraysInputSQL = `SELECT $1::arrays;`
 // ArraysInput implements Querier.ArraysInput.
 func (q *DBQuerier) ArraysInput(ctx context.Context, arrays Arrays) (Arrays, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "ArraysInput")
-	rows, err := q.conn.Query(ctx, arraysInputSQL, q.types.newArraysInit(arrays))
+	rows, err := q.conn.Query(ctx, arraysInputSQL, arrays)
 	if err != nil {
 		return Arrays{}, fmt.Errorf("query ArraysInput: %w", err)
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (Arrays, error) {
 		var item Arrays
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -491,9 +463,8 @@ func (q *DBQuerier) UserEmails(ctx context.Context) (UserEmail, error) {
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (UserEmail, error) {
 		var item UserEmail
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil

@@ -14,7 +14,7 @@ func register_newDeviceTypeEnum(
 		"\"device_type\"",
 	)
 	if err != nil {
-		return fmt.Errorf("failed to load type for: %w", err)
+		return fmt.Errorf("newDeviceTypeEnum failed to load type: %w", err)
 	}
 	
 	conn.TypeMap().RegisterType(t)
@@ -24,7 +24,7 @@ func register_newDeviceTypeEnum(
 		"_device_type",
 	)
 	if err != nil {
-		return fmt.Errorf("failed to load type for: %w", err)
+		return fmt.Errorf("newDeviceTypeEnum failed to load type: %w", err)
 	}
 	
 	conn.TypeMap().RegisterType(t)
@@ -84,7 +84,7 @@ func (d DeviceType) String() string { return string(d) }
 			"\"some_table_enum\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newSomeTableEnum failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)

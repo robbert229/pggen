@@ -47,7 +47,7 @@ type SomeTable struct {
 			"\"some_table\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newSomeTable failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -59,18 +59,3 @@ type SomeTable struct {
 		addHook(register_newSomeTable) 
 	}
 	
-
-// newSomeTableInit creates an initialized pgtype.ValueTranscoder for the
-// Postgres composite type 'some_table' to encode query parameters.
-func registernewSomeTableInit(v SomeTable) pgtype.Codec {
-	return tr.setCodec(tr.newSomeTable(), tr.newSomeTableRaw(v))
-}
-
-// newSomeTableRaw returns all composite fields for the Postgres composite
-// type 'some_table' as a slice of interface{} to encode query parameters.
-func registernewSomeTableRaw(v SomeTable) []interface{} {
-	return []interface{}{
-		v.Foo,
-		v.BarBaz,
-	}
-}

@@ -68,6 +68,8 @@ func register(ctx context.Context, conn genericConn) error {
 	return nil
 }
 
+
+
 // Alpha represents the Postgres composite type "alpha".
 type Alpha struct {
 	Key *string `json:"key"`
@@ -106,7 +108,7 @@ type Alpha struct {
 			"\"alpha\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newAlpha failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -141,7 +143,7 @@ type Alpha struct {
 			"\"_alpha\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newAlphaArray failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -166,9 +168,8 @@ func (q *DBQuerier) AlphaNested(ctx context.Context) (string, error) {
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (string, error) {
 		var item string
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -187,9 +188,8 @@ func (q *DBQuerier) AlphaCompositeArray(ctx context.Context) ([]Alpha, error) {
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) ([]Alpha, error) {
 		var item []Alpha
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil

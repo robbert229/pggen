@@ -64,6 +64,8 @@ func register(ctx context.Context, conn genericConn) error {
 	return nil
 }
 
+
+
 // Dimensions represents the Postgres composite type "dimensions".
 type Dimensions struct {
 	Width  int `json:"width"`
@@ -126,7 +128,7 @@ type ProductImageType struct {
 			"\"dimensions\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newDimensions failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -190,7 +192,7 @@ type ProductImageType struct {
 			"\"product_image_set_type\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newProductImageSetType failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -244,7 +246,7 @@ type ProductImageType struct {
 			"\"product_image_type\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newProductImageType failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -279,7 +281,7 @@ type ProductImageType struct {
 			"\"_product_image_type\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newProductImageTypeArray failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -308,9 +310,8 @@ func (q *DBQuerier) ArrayNested2(ctx context.Context) ([]ProductImageType, error
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) ([]ProductImageType, error) {
 		var item []ProductImageType
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -337,9 +338,8 @@ func (q *DBQuerier) Nested3(ctx context.Context) ([]ProductImageSetType, error) 
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (ProductImageSetType, error) {
 		var item ProductImageSetType
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil

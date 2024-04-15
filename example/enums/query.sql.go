@@ -77,6 +77,8 @@ func register(ctx context.Context, conn genericConn) error {
 	return nil
 }
 
+
+
 // Device represents the Postgres composite type "device".
 type Device struct {
 	Mac  net.HardwareAddr `json:"mac"`
@@ -94,7 +96,7 @@ func register_newDeviceTypeEnum(
 		"\"device_type\"",
 	)
 	if err != nil {
-		return fmt.Errorf("failed to load type for: %w", err)
+		return fmt.Errorf("newDeviceTypeEnum failed to load type: %w", err)
 	}
 	
 	conn.TypeMap().RegisterType(t)
@@ -104,7 +106,7 @@ func register_newDeviceTypeEnum(
 		"_device_type",
 	)
 	if err != nil {
-		return fmt.Errorf("failed to load type for: %w", err)
+		return fmt.Errorf("newDeviceTypeEnum failed to load type: %w", err)
 	}
 	
 	conn.TypeMap().RegisterType(t)
@@ -178,7 +180,7 @@ func (d DeviceType) String() string { return string(d) }
 			"\"device\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newDevice failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -213,7 +215,7 @@ func (d DeviceType) String() string { return string(d) }
 			"\"_device_type\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newDeviceTypeArray failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -244,10 +246,9 @@ func (q *DBQuerier) FindAllDevices(ctx context.Context) ([]FindAllDevicesRow, er
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (FindAllDevicesRow, error) {
 		var item FindAllDevicesRow
-		if err := row.Scan(
-			&item.Mac, // 'mac', 'Mac', 'net.HardwareAddr', 'net', 'HardwareAddr'
+		if err := row.Scan(&item.Mac, // 'mac', 'Mac', 'net.HardwareAddr', 'net', 'HardwareAddr'
 			&item.Type, // 'type', 'Type', 'DeviceType', 'github.com/robbert229/pggen/example/enums', 'DeviceType'
-		); err != nil {
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -279,9 +280,8 @@ func (q *DBQuerier) FindOneDeviceArray(ctx context.Context) ([]DeviceType, error
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) ([]DeviceType, error) {
 		var item []DeviceType
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -302,9 +302,8 @@ func (q *DBQuerier) FindManyDeviceArray(ctx context.Context) ([][]DeviceType, er
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) ([]DeviceType, error) {
 		var item []DeviceType
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -330,10 +329,9 @@ func (q *DBQuerier) FindManyDeviceArrayWithNum(ctx context.Context) ([]FindManyD
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (FindManyDeviceArrayWithNumRow, error) {
 		var item FindManyDeviceArrayWithNumRow
-		if err := row.Scan(
-			&item.Num, // 'num', 'Num', '*int32', '', '*int32'
+		if err := row.Scan(&item.Num, // 'num', 'Num', '*int32', '', '*int32'
 			&item.DeviceTypes, // 'device_types', 'DeviceTypes', '[]DeviceType', 'github.com/robbert229/pggen/example/enums', '[]DeviceType'
-		); err != nil {
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -352,9 +350,8 @@ func (q *DBQuerier) EnumInsideComposite(ctx context.Context) (Device, error) {
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (Device, error) {
 		var item Device
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil

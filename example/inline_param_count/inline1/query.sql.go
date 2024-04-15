@@ -72,6 +72,8 @@ func register(ctx context.Context, conn genericConn) error {
 	return nil
 }
 
+
+
 const countAuthorsSQL = `SELECT count(*) FROM author;`
 
 // CountAuthors implements Querier.CountAuthors.
@@ -84,9 +86,8 @@ func (q *DBQuerier) CountAuthors(ctx context.Context) (*int, error) {
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (*int, error) {
 		var item *int
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -112,12 +113,11 @@ func (q *DBQuerier) FindAuthorByID(ctx context.Context, authorID int32) (FindAut
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (FindAuthorByIDRow, error) {
 		var item FindAuthorByIDRow
-		if err := row.Scan(
-			&item.AuthorID, // 'author_id', 'AuthorID', 'int32', '', 'int32'
+		if err := row.Scan(&item.AuthorID, // 'author_id', 'AuthorID', 'int32', '', 'int32'
 			&item.FirstName, // 'first_name', 'FirstName', 'string', '', 'string'
 			&item.LastName, // 'last_name', 'LastName', 'string', '', 'string'
 			&item.Suffix, // 'suffix', 'Suffix', '*string', '', '*string'
-		); err != nil {
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -143,9 +143,8 @@ func (q *DBQuerier) InsertAuthor(ctx context.Context, params InsertAuthorParams)
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (int32, error) {
 		var item int32
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil

@@ -62,6 +62,8 @@ func register(ctx context.Context, conn genericConn) error {
 	return nil
 }
 
+
+
 const domainOneSQL = `SELECT '90210'::us_postal_code;`
 
 // DomainOne implements Querier.DomainOne.
@@ -74,9 +76,8 @@ func (q *DBQuerier) DomainOne(ctx context.Context) (string, error) {
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (string, error) {
 		var item string
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil

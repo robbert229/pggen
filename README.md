@@ -19,16 +19,16 @@ The following examples compile, and are implemented.
 * example/slices
 * example/syntax
 * example/custom_types
-* example/composite
 * example/enums
 * example/device
 * example/function
 * example/nested
 * example/separate_out_dir/out
-
-# Feature Unsupported
-
-* example/complex_params
 * example/erp/order
 * example/ltree
 * example/void
+
+# Feature Unsupported
+
+* example/composite
+* example/complex_params

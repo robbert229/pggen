@@ -42,7 +42,7 @@ type SomeTableNested struct {
 			"\"foo_type\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newFooType failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -54,14 +54,6 @@ type SomeTableNested struct {
 		addHook(register_newFooType) 
 	}
 	
-
-// newFooTypeRaw returns all composite fields for the Postgres composite
-// type 'foo_type' as a slice of interface{} to encode query parameters.
-func registernewFooTypeRaw(v FooType) []interface{} {
-	return []interface{}{
-		v.Alpha,
-	}
-}
 
 
 	// codec_newSomeTableNested is a codec for the composite type of the same name
@@ -104,7 +96,7 @@ func registernewFooTypeRaw(v FooType) []interface{} {
 			"\"some_table_nested\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newSomeTableNested failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -116,18 +108,3 @@ func registernewFooTypeRaw(v FooType) []interface{} {
 		addHook(register_newSomeTableNested) 
 	}
 	
-
-// newSomeTableNestedInit creates an initialized pgtype.ValueTranscoder for the
-// Postgres composite type 'some_table_nested' to encode query parameters.
-func registernewSomeTableNestedInit(v SomeTableNested) pgtype.Codec {
-	return tr.setCodec(tr.newSomeTableNested(), tr.newSomeTableNestedRaw(v))
-}
-
-// newSomeTableNestedRaw returns all composite fields for the Postgres composite
-// type 'some_table_nested' as a slice of interface{} to encode query parameters.
-func registernewSomeTableNestedRaw(v SomeTableNested) []interface{} {
-	return []interface{}{
-		tr.newFooTypeRaw(v.Foo),
-		v.BarBaz,
-	}
-}

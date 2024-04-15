@@ -97,7 +97,7 @@ func register_{{ .FuncName }}(
 		{{ .PgEnumName }},
 	)
 	if err != nil {
-		return fmt.Errorf("failed to load type for: %w", err)
+		return fmt.Errorf("{{ .FuncName }} failed to load type: %w", err)
 	}
 	
 	conn.TypeMap().RegisterType(t)
@@ -107,7 +107,7 @@ func register_{{ .FuncName }}(
 		{{ .PgEnumArrayName }},
 	)
 	if err != nil {
-		return fmt.Errorf("failed to load type for: %w", err)
+		return fmt.Errorf("{{ .FuncName }} failed to load type: %w", err)
 	}
 	
 	conn.TypeMap().RegisterType(t)

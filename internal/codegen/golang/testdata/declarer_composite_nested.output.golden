@@ -42,7 +42,7 @@ type SomeTableNested struct {
 			"\"foo_type\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newFooType failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -96,7 +96,7 @@ type SomeTableNested struct {
 			"\"some_table_nested\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newSomeTableNested failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)

@@ -39,6 +39,28 @@ func NewTemplater(opts TemplaterOpts) Templater {
 	}
 }
 
+func filterImports(predicate func() bool, optionalImport string, imports []string) []string {
+	if predicate() {
+		return imports
+	}
+
+	importIdx := -1
+
+	for i, pkg := range imports {
+		if pkg == optionalImport {
+			importIdx = i
+			break
+		}
+	}
+
+	if importIdx == -1 {
+		return imports
+	}
+
+	copy(imports[importIdx:], imports[importIdx+1:])
+	return imports[:len(imports)-1]
+}
+
 // TemplateAll creates query template files for each codegen.QueryFile.
 func (tm Templater) TemplateAll(files []codegen.QueryFile) ([]TemplatedFile, error) {
 	goQueryFiles := make([]TemplatedFile, 0, len(files))
@@ -67,23 +89,11 @@ func (tm Templater) TemplateAll(files []codegen.QueryFile) ([]TemplatedFile, err
 	// Add declarers to leader file.
 	goQueryFiles[firstIndex].Declarers = allDeclarers.ListAll()
 
-	// Remove unneeded pgconn import if possible.
-	for i, file := range goQueryFiles {
-		if file.needsPgconnImport() {
-			continue
-		}
-		pgconnIdx := -1
-		imports := file.Imports
-		for i, pkg := range imports {
-			if pkg == "github.com/jackc/pgx/v5/pgconn" {
-				pgconnIdx = i
-				break
-			}
-		}
-		if pgconnIdx > -1 {
-			copy(imports[pgconnIdx:], imports[pgconnIdx+1:])
-			goQueryFiles[i].Imports = imports[:len(imports)-1]
-		}
+	for i, _ := range goQueryFiles {
+		// Remove unneeded pgconn import if possible.
+		goQueryFiles[i].Imports = filterImports(goQueryFiles[i].needsPgconnImport, "github.com/jackc/pgx/v5/pgconn", goQueryFiles[i].Imports)
+		// Remove unneeded driver import if possible.
+		goQueryFiles[i].Imports = filterImports(goQueryFiles[i].NeedsVoidSupport, "database/sql/driver", goQueryFiles[i].Imports)
 	}
 
 	// Remove self imports.
@@ -119,6 +129,7 @@ func (tm Templater) templateFile(file codegen.QueryFile, isLeader bool) (Templat
 	imports.AddPackage("github.com/jackc/pgx/v5")
 
 	if isLeader {
+		imports.AddPackage("database/sql/driver")
 		imports.AddPackage("github.com/jackc/pgx/v5/pgtype")
 	}
 

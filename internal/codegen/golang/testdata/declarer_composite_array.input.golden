@@ -47,7 +47,7 @@ type SomeTable struct {
 			"\"some_table\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newSomeTable failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -59,15 +59,6 @@ type SomeTable struct {
 		addHook(register_newSomeTable) 
 	}
 	
-
-// newSomeTableRaw returns all composite fields for the Postgres composite
-// type 'some_table' as a slice of interface{} to encode query parameters.
-func registernewSomeTableRaw(v SomeTable) []interface{} {
-	return []interface{}{
-		v.Foo,
-		v.BarBaz,
-	}
-}
 
 
 	// codec_newSomeTableArray is a codec for the composite type of the same name
@@ -91,7 +82,7 @@ func registernewSomeTableRaw(v SomeTable) []interface{} {
 			"\"_some_array\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newSomeTableArray failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -103,23 +94,3 @@ func registernewSomeTableRaw(v SomeTable) []interface{} {
 		addHook(register_newSomeTableArray) 
 	}
 	
-
-// newSomeTableArrayInit creates an initialized pgtype.ValueTranscoder for the
-// Postgres array type '_some_array' to encode query parameters.
-func registernewSomeTableArrayInit(ps []SomeTable) pgtype.ValueTranscoder {
-	dec := tr.newSomeTableArray()
-	if err := dec.Set(tr.newSomeTableArrayRaw(ps)); err != nil {
-		panic("encode []SomeTable: " + err.Error()) // should always succeed
-	}
-	return textPreferrer{ValueTranscoder: dec, typeName: "_some_array"}
-}
-
-// newSomeTableArrayRaw returns all elements for the Postgres array type '_some_array'
-// as a slice of interface{} for use with the pgtype.Value Set method.
-func registernewSomeTableArrayRaw(vs []SomeTable) []interface{} {
-	elems := make([]interface{}, len(vs))
-	for i, v := range vs {
-		elems[i] = tr.newSomeTableRaw(v)
-	}
-	return elems
-}

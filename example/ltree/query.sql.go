@@ -70,6 +70,8 @@ func register(ctx context.Context, conn genericConn) error {
 
 
 
+
+
 const findTopScienceChildrenSQL = `SELECT path
 FROM test
 WHERE path <@ 'Top.Science';`
@@ -84,9 +86,8 @@ func (q *DBQuerier) FindTopScienceChildren(ctx context.Context) ([]pgtype.Text, 
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (pgtype.Text, error) {
 		var item pgtype.Text
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -107,9 +108,8 @@ func (q *DBQuerier) FindTopScienceChildrenAgg(ctx context.Context) ([]pgtype.Tex
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) ([]pgtype.Text, error) {
 		var item []pgtype.Text
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -167,10 +167,9 @@ func (q *DBQuerier) FindLtreeInput(ctx context.Context, inLtree pgtype.Text, inL
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (FindLtreeInputRow, error) {
 		var item FindLtreeInputRow
-		if err := row.Scan(
-			&item.Ltree, // 'ltree', 'Ltree', 'pgtype.Text', 'github.com/jackc/pgx/v5/pgtype', 'Text'
+		if err := row.Scan(&item.Ltree, // 'ltree', 'Ltree', 'pgtype.Text', 'github.com/jackc/pgx/v5/pgtype', 'Text'
 			&item.TextArr, // 'text_arr', 'TextArr', '[]pgtype.Text', 'github.com/jackc/pgx/v5/pgtype', '[]Text'
-		); err != nil {
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil

@@ -70,6 +70,8 @@ func register(ctx context.Context, conn genericConn) error {
 	return nil
 }
 
+
+
 // Dimensions represents the Postgres composite type "dimensions".
 type Dimensions struct {
 	Width  int `json:"width"`
@@ -132,7 +134,7 @@ type ProductImageType struct {
 			"\"dimensions\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newDimensions failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -144,21 +146,6 @@ type ProductImageType struct {
 		addHook(register_newDimensions) 
 	}
 	
-
-// newDimensionsInit creates an initialized pgtype.ValueTranscoder for the
-// Postgres composite type 'dimensions' to encode query parameters.
-func registernewDimensionsInit(v Dimensions) pgtype.Codec {
-	return tr.setCodec(tr.newDimensions(), tr.newDimensionsRaw(v))
-}
-
-// newDimensionsRaw returns all composite fields for the Postgres composite
-// type 'dimensions' as a slice of interface{} to encode query parameters.
-func registernewDimensionsRaw(v Dimensions) []interface{} {
-	return []interface{}{
-		v.Width,
-		v.Height,
-	}
-}
 
 
 	// codec_newProductImageSetType is a codec for the composite type of the same name
@@ -211,7 +198,7 @@ func registernewDimensionsRaw(v Dimensions) []interface{} {
 			"\"product_image_set_type\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newProductImageSetType failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -223,22 +210,6 @@ func registernewDimensionsRaw(v Dimensions) []interface{} {
 		addHook(register_newProductImageSetType) 
 	}
 	
-
-// newProductImageSetTypeInit creates an initialized pgtype.ValueTranscoder for the
-// Postgres composite type 'product_image_set_type' to encode query parameters.
-func registernewProductImageSetTypeInit(v ProductImageSetType) pgtype.Codec {
-	return tr.setCodec(tr.newProductImageSetType(), tr.newProductImageSetTypeRaw(v))
-}
-
-// newProductImageSetTypeRaw returns all composite fields for the Postgres composite
-// type 'product_image_set_type' as a slice of interface{} to encode query parameters.
-func registernewProductImageSetTypeRaw(v ProductImageSetType) []interface{} {
-	return []interface{}{
-		v.Name,
-		tr.newProductImageTypeRaw(v.OrigImage),
-		tr.newProductImageTypeArrayRaw(v.Images),
-	}
-}
 
 
 	// codec_newProductImageType is a codec for the composite type of the same name
@@ -281,7 +252,7 @@ func registernewProductImageSetTypeRaw(v ProductImageSetType) []interface{} {
 			"\"product_image_type\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newProductImageType failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -293,21 +264,6 @@ func registernewProductImageSetTypeRaw(v ProductImageSetType) []interface{} {
 		addHook(register_newProductImageType) 
 	}
 	
-
-// newProductImageTypeInit creates an initialized pgtype.ValueTranscoder for the
-// Postgres composite type 'product_image_type' to encode query parameters.
-func registernewProductImageTypeInit(v ProductImageType) pgtype.Codec {
-	return tr.setCodec(tr.newProductImageType(), tr.newProductImageTypeRaw(v))
-}
-
-// newProductImageTypeRaw returns all composite fields for the Postgres composite
-// type 'product_image_type' as a slice of interface{} to encode query parameters.
-func registernewProductImageTypeRaw(v ProductImageType) []interface{} {
-	return []interface{}{
-		v.Source,
-		tr.newDimensionsRaw(v.Dimensions),
-	}
-}
 
 
 	// codec_newProductImageTypeArray is a codec for the composite type of the same name
@@ -331,7 +287,7 @@ func registernewProductImageTypeRaw(v ProductImageType) []interface{} {
 			"\"_product_image_type\"",
 		)
 		if err != nil {
-			return fmt.Errorf("failed to load type for: %w", err)
+			return fmt.Errorf("newProductImageTypeArray failed to load type: %w", err)
 		}
 		
 		conn.TypeMap().RegisterType(t)
@@ -343,26 +299,6 @@ func registernewProductImageTypeRaw(v ProductImageType) []interface{} {
 		addHook(register_newProductImageTypeArray) 
 	}
 	
-
-// newProductImageTypeArrayInit creates an initialized pgtype.ValueTranscoder for the
-// Postgres array type '_product_image_type' to encode query parameters.
-func registernewProductImageTypeArrayInit(ps []ProductImageType) pgtype.ValueTranscoder {
-	dec := tr.newProductImageTypeArray()
-	if err := dec.Set(tr.newProductImageTypeArrayRaw(ps)); err != nil {
-		panic("encode []ProductImageType: " + err.Error()) // should always succeed
-	}
-	return textPreferrer{ValueTranscoder: dec, typeName: "_product_image_type"}
-}
-
-// newProductImageTypeArrayRaw returns all elements for the Postgres array type '_product_image_type'
-// as a slice of interface{} for use with the pgtype.Value Set method.
-func registernewProductImageTypeArrayRaw(vs []ProductImageType) []interface{} {
-	elems := make([]interface{}, len(vs))
-	for i, v := range vs {
-		elems[i] = tr.newProductImageTypeRaw(v)
-	}
-	return elems
-}
 
 const paramArrayIntSQL = `SELECT $1::bigint[];`
 
@@ -376,9 +312,8 @@ func (q *DBQuerier) ParamArrayInt(ctx context.Context, ints []int) ([]int, error
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) ([]int, error) {
 		var item []int
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -390,16 +325,15 @@ const paramNested1SQL = `SELECT $1::dimensions;`
 // ParamNested1 implements Querier.ParamNested1.
 func (q *DBQuerier) ParamNested1(ctx context.Context, dimensions Dimensions) (Dimensions, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "ParamNested1")
-	rows, err := q.conn.Query(ctx, paramNested1SQL, q.types.newDimensionsInit(dimensions))
+	rows, err := q.conn.Query(ctx, paramNested1SQL, dimensions)
 	if err != nil {
 		return Dimensions{}, fmt.Errorf("query ParamNested1: %w", err)
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (Dimensions, error) {
 		var item Dimensions
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -411,16 +345,15 @@ const paramNested2SQL = `SELECT $1::product_image_type;`
 // ParamNested2 implements Querier.ParamNested2.
 func (q *DBQuerier) ParamNested2(ctx context.Context, image ProductImageType) (ProductImageType, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "ParamNested2")
-	rows, err := q.conn.Query(ctx, paramNested2SQL, q.types.newProductImageTypeInit(image))
+	rows, err := q.conn.Query(ctx, paramNested2SQL, image)
 	if err != nil {
 		return ProductImageType{}, fmt.Errorf("query ParamNested2: %w", err)
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (ProductImageType, error) {
 		var item ProductImageType
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -432,16 +365,15 @@ const paramNested2ArraySQL = `SELECT $1::product_image_type[];`
 // ParamNested2Array implements Querier.ParamNested2Array.
 func (q *DBQuerier) ParamNested2Array(ctx context.Context, images []ProductImageType) ([]ProductImageType, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "ParamNested2Array")
-	rows, err := q.conn.Query(ctx, paramNested2ArraySQL, q.types.newProductImageTypeArrayInit(images))
+	rows, err := q.conn.Query(ctx, paramNested2ArraySQL, q.types.NOOP(images))
 	if err != nil {
 		return nil, fmt.Errorf("query ParamNested2Array: %w", err)
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) ([]ProductImageType, error) {
 		var item []ProductImageType
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -453,16 +385,15 @@ const paramNested3SQL = `SELECT $1::product_image_set_type;`
 // ParamNested3 implements Querier.ParamNested3.
 func (q *DBQuerier) ParamNested3(ctx context.Context, imageSet ProductImageSetType) (ProductImageSetType, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "ParamNested3")
-	rows, err := q.conn.Query(ctx, paramNested3SQL, q.types.newProductImageSetTypeInit(imageSet))
+	rows, err := q.conn.Query(ctx, paramNested3SQL, imageSet)
 	if err != nil {
 		return ProductImageSetType{}, fmt.Errorf("query ParamNested3: %w", err)
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (ProductImageSetType, error) {
 		var item ProductImageSetType
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil

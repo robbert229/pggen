@@ -70,6 +70,10 @@ func register(ctx context.Context, conn genericConn) error {
 	return nil
 }
 
+{{ if .NeedsVoidSupport }}
+{{ template "void_utils" . }}
+{{ end }}
+
 {{- range .Declarers}}{{- "\n\n" -}}{{ .Declare $.PkgPath }}{{ end -}}
 
 {{- end -}}
@@ -98,9 +102,13 @@ func (q *DBQuerier) {{ $q.Name }}(ctx context.Context {{- $q.EmitParams }}) ({{ 
 	return {{ $q.EmitCollectionFunc }}(rows, func(row pgx.CollectableRow) ({{ $q.EmitSingularResultType }}, error) {
 		var item {{ $q.EmitSingularResultType }}
 		if err := row.Scan(
-			{{- range $i, $col := $q.Outputs }}
-			{{ $q.EmitScanColumn $i $col }}
-			{{- end }}
+			{{- range $i, $col := $q.ScanCols }}
+			{{- if eq $col.QualType "" }}
+			&pgVoid{},
+			{{ else }}
+				{{- $q.EmitScanColumn $i $col }}
+			{{ end -}}
+			{{- end -}}
 		); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
@@ -110,4 +118,68 @@ func (q *DBQuerier) {{ $q.Name }}(ctx context.Context {{- $q.EmitParams }}) ({{ 
 }
 {{- end -}}
 {{- "\n" -}}
+{{- end -}}
+
+
+{{- define "void_utils" -}}
+
+type voidCodec struct {}
+
+var _ pgtype.Codec = &voidCodec{}
+
+// FormatSupported returns true if the format is supported.
+func (voidCodec)  FormatSupported(int16) bool {
+	return true
+}
+
+// PreferredFormat returns the preferred format.
+func (voidCodec) PreferredFormat() int16 {
+	return pgtype.TextFormatCode
+}
+
+// PlanEncode returns an EncodePlan for encoding value into PostgreSQL format for oid and format. If no plan can be
+// found then nil is returned.
+func (voidCodec) PlanEncode(m *pgtype.Map, oid uint32, format int16, value any) pgtype.EncodePlan {
+	return nil
+}
+
+// PlanScan returns a ScanPlan for scanning a PostgreSQL value into a destination with the same type as target. If
+// no plan can be found then nil is returned.
+func (voidCodec) PlanScan(m *pgtype.Map, oid uint32, format int16, target any) pgtype.ScanPlan {
+	return nil
+}
+
+// DecodeDatabaseSQLValue returns src decoded into a value compatible with the sql.Scanner interface.
+func (voidCodec) DecodeDatabaseSQLValue(m *pgtype.Map, oid uint32, format int16, src []byte) (driver.Value, error) {
+	return nil, nil
+}
+
+// DecodeValue returns src decoded into its default format.
+func (voidCodec) DecodeValue(m *pgtype.Map, oid uint32, format int16, src []byte) (any, error) {
+	return nil, nil
+}
+
+type pgVoid struct {}
+
+// Scan implements the database/sql Scanner interface.
+func (dst *pgVoid) Scan(src any) error {
+	return nil
+}
+
+// Value implements the database/sql/driver Valuer interface.
+func (src pgVoid) Value() (driver.Value, error) {
+	return nil, nil
+}
+
+func init(){
+	addHook(func(ctx context.Context, conn genericConn) error{
+		conn.TypeMap().RegisterType(&pgtype.Type{
+			Name: "void",
+			OID: 2278,
+			Codec: voidCodec{},
+		})
+		return nil
+	})
+}
+
 {{- end -}}

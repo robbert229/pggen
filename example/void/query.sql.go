@@ -4,6 +4,7 @@ package void
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -70,6 +71,67 @@ func register(ctx context.Context, conn genericConn) error {
 	return nil
 }
 
+
+type voidCodec struct {}
+
+var _ pgtype.Codec = &voidCodec{}
+
+// FormatSupported returns true if the format is supported.
+func (voidCodec)  FormatSupported(int16) bool {
+	return true
+}
+
+// PreferredFormat returns the preferred format.
+func (voidCodec) PreferredFormat() int16 {
+	return pgtype.TextFormatCode
+}
+
+// PlanEncode returns an EncodePlan for encoding value into PostgreSQL format for oid and format. If no plan can be
+// found then nil is returned.
+func (voidCodec) PlanEncode(m *pgtype.Map, oid uint32, format int16, value any) pgtype.EncodePlan {
+	return nil
+}
+
+// PlanScan returns a ScanPlan for scanning a PostgreSQL value into a destination with the same type as target. If
+// no plan can be found then nil is returned.
+func (voidCodec) PlanScan(m *pgtype.Map, oid uint32, format int16, target any) pgtype.ScanPlan {
+	return nil
+}
+
+// DecodeDatabaseSQLValue returns src decoded into a value compatible with the sql.Scanner interface.
+func (voidCodec) DecodeDatabaseSQLValue(m *pgtype.Map, oid uint32, format int16, src []byte) (driver.Value, error) {
+	return nil, nil
+}
+
+// DecodeValue returns src decoded into its default format.
+func (voidCodec) DecodeValue(m *pgtype.Map, oid uint32, format int16, src []byte) (any, error) {
+	return nil, nil
+}
+
+type pgVoid struct {}
+
+// Scan implements the database/sql Scanner interface.
+func (dst *pgVoid) Scan(src any) error {
+	return nil
+}
+
+// Value implements the database/sql/driver Valuer interface.
+func (src pgVoid) Value() (driver.Value, error) {
+	return nil, nil
+}
+
+func init(){
+	addHook(func(ctx context.Context, conn genericConn) error{
+		conn.TypeMap().RegisterType(&pgtype.Type{
+			Name: "void",
+			OID: 2278,
+			Codec: voidCodec{},
+		})
+		return nil
+	})
+}
+
+
 const voidOnlySQL = `SELECT void_fn();`
 
 // VoidOnly implements Querier.VoidOnly.
@@ -107,8 +169,9 @@ func (q *DBQuerier) VoidTwo(ctx context.Context) (string, error) {
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (string, error) {
 		var item string
 		if err := row.Scan(
+			&pgVoid{},
 			&item,
-		); err != nil {
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -133,9 +196,10 @@ func (q *DBQuerier) VoidThree(ctx context.Context) (VoidThreeRow, error) {
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (VoidThreeRow, error) {
 		var item VoidThreeRow
 		if err := row.Scan(
+			&pgVoid{},
 			&item.Foo, // 'foo', 'Foo', 'string', '', 'string'
 			&item.Bar, // 'bar', 'Bar', 'string', '', 'string'
-		); err != nil {
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -154,9 +218,12 @@ func (q *DBQuerier) VoidThree2(ctx context.Context) ([]string, error) {
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (string, error) {
 		var item string
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			
+			&pgVoid{},
+			
+			&pgVoid{},
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil

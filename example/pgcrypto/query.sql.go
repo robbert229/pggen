@@ -64,6 +64,8 @@ func register(ctx context.Context, conn genericConn) error {
 	return nil
 }
 
+
+
 const createUserSQL = `INSERT INTO "user" (email, pass)
 VALUES ($1, crypt($2, gen_salt('bf')));`
 
@@ -95,10 +97,9 @@ func (q *DBQuerier) FindUser(ctx context.Context, email string) (FindUserRow, er
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (FindUserRow, error) {
 		var item FindUserRow
-		if err := row.Scan(
-			&item.Email, // 'email', 'Email', 'string', '', 'string'
+		if err := row.Scan(&item.Email, // 'email', 'Email', 'string', '', 'string'
 			&item.Pass, // 'pass', 'Pass', 'string', '', 'string'
-		); err != nil {
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil

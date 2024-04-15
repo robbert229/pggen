@@ -67,6 +67,8 @@ func register(ctx context.Context, conn genericConn) error {
 	return nil
 }
 
+
+
 const customTypesSQL = `SELECT 'some_text', 1::bigint;`
 
 type CustomTypesRow struct {
@@ -84,10 +86,9 @@ func (q *DBQuerier) CustomTypes(ctx context.Context) (CustomTypesRow, error) {
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (CustomTypesRow, error) {
 		var item CustomTypesRow
-		if err := row.Scan(
-			&item.Column, // '?column?', 'Column', 'mytype.String', 'github.com/robbert229/pggen/example/custom_types/mytype', 'String'
+		if err := row.Scan(&item.Column, // '?column?', 'Column', 'mytype.String', 'github.com/robbert229/pggen/example/custom_types/mytype', 'String'
 			&item.Int8, // 'int8', 'Int8', 'CustomInt', 'github.com/robbert229/pggen/example/custom_types', 'CustomInt'
-		); err != nil {
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -106,9 +107,8 @@ func (q *DBQuerier) CustomMyInt(ctx context.Context) (int, error) {
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (int, error) {
 		var item int
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
@@ -127,9 +127,8 @@ func (q *DBQuerier) IntArray(ctx context.Context) ([][]int32, error) {
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) ([]int32, error) {
 		var item []int32
-		if err := row.Scan(
-			&item,
-		); err != nil {
+		if err := row.Scan(&item,
+			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
 		return item, nil
