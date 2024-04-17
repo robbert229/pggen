@@ -210,6 +210,17 @@ func TestExamples(t *testing.T) {
 			},
 		},
 		{
+			name: "example/pgtype",
+			args: []string{
+				"--schema-glob", "example/pgtype/schema.sql",
+				"--query-glob", "example/pgtype/query.sql",
+				"--go-type", "text=github.com/jackc/pgx/v5/pgtype.Text",
+				"--go-type", "int4=github.com/jackc/pgx/v5/pgtype.Int4",
+				"--go-type", "int8=github.com/jackc/pgx/v5/pgtype.Int8",
+				"--go-type", "bool=github.com/jackc/pgx/v5/pgtype.Bool",
+			},
+		},
+		{
 			name: "example/separate_out_dir",
 			args: []string{
 				"--schema-glob", "example/separate_out_dir/schema.sql",

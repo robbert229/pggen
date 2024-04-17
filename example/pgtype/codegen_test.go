@@ -1,4 +1,4 @@
-package composite
+package pgtype
 
 import (
 	"os"
@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGenerate_Go_Example_Composite(t *testing.T) {
+func TestGenerate_Go_Example_PgType(t *testing.T) {
 	conn, cleanupFunc := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanupFunc()
 
@@ -20,20 +20,15 @@ func TestGenerate_Go_Example_Composite(t *testing.T) {
 			ConnString:       conn.Config().ConnString(),
 			QueryFiles:       []string{"query.sql"},
 			OutputDir:        tmpDir,
-			GoPackage:        "composite",
+			GoPackage:        "author",
 			Language:         pggen.LangGo,
 			InlineParamCount: 2,
 			TypeOverrides: map[string]string{
-				"_bool":  "[]bool",
-				"bool":   "bool",
-				"int8":   "int",
-				"int4":   "int",
-				"text":   "string",
-				"citext": "github.com/jackc/pgx/v5/pgtype.Text",
+				"text": "github.com/jackc/pgx/v5/pgtype.Text",
 			},
 		})
 	if err != nil {
-		t.Fatalf("Generate(): %s", err)
+		t.Fatalf("Generate() example/author: %s", err)
 	}
 
 	wantQueryFile := "query.sql.go"

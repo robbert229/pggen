@@ -212,6 +212,7 @@ func (tm Templater) templateFile(file codegen.QueryFile, isLeader bool) (Templat
 			Outputs:          nonVoidCols,
 			ScanCols:         outputs,
 			InlineParamCount: tm.inlineParamCount,
+			PkgPath:          tm.pkg,
 		})
 	}
 

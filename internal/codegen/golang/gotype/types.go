@@ -3,12 +3,13 @@ package gotype
 import (
 	"bytes"
 	"fmt"
-	"github.com/robbert229/pggen/internal/casing"
-	"github.com/robbert229/pggen/internal/pg"
 	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/robbert229/pggen/internal/casing"
+	"github.com/robbert229/pggen/internal/pg"
 )
 
 // Type is a Go type.

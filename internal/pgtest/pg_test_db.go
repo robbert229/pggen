@@ -2,13 +2,14 @@ package pgtest
 
 import (
 	"context"
-	"github.com/jackc/pgx/v5"
 	"math/rand"
 	"os"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 // CleanupFunc deletes the schema and all database objects.

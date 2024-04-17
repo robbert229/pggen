@@ -274,7 +274,6 @@ type UserEmail struct {
 			"\"user_email\"",
 		)
 		if err != nil {
-			pgx.
 			return fmt.Errorf("newUserEmail failed to load type: %w", err)
 		}
 		

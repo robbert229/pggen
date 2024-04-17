@@ -44,6 +44,7 @@ type TemplatedQuery struct {
 	Outputs          []TemplatedColumn // non-void output columns of the query
 	ScanCols         []TemplatedColumn // all columns of the query, including void columns
 	InlineParamCount int               // inclusive count of params that will be inlined
+	PkgPath          string            // full package path, like "github.com/foo/bar"
 }
 
 type TemplatedParam struct {
@@ -392,6 +393,11 @@ func (tq TemplatedQuery) EmitZeroResult() (string, error) {
 			if it, ok := tq.Outputs[0].Type.(*gotype.ImportType); ok {
 				if _, ok := it.Type.(*gotype.EnumType); ok {
 					return typ + `("")`, nil
+				}
+
+				if _, ok := it.Type.(*gotype.OpaqueType); ok {
+					qualified := gotype.QualifyType(it, tq.PkgPath)
+					return qualified + "{}", nil
 				}
 			}
 			return typ + "{}", nil // won't work for type Foo int
