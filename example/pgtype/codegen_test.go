@@ -20,11 +20,14 @@ func TestGenerate_Go_Example_PgType(t *testing.T) {
 			ConnString:       conn.Config().ConnString(),
 			QueryFiles:       []string{"query.sql"},
 			OutputDir:        tmpDir,
-			GoPackage:        "author",
+			GoPackage:        "pgtype",
 			Language:         pggen.LangGo,
 			InlineParamCount: 2,
 			TypeOverrides: map[string]string{
 				"text": "github.com/jackc/pgx/v5/pgtype.Text",
+				"int4": "github.com/jackc/pgx/v5/pgtype.Int4",
+				"int8": "github.com/jackc/pgx/v5/pgtype.Int8",
+				"bool": "=github.com/jackc/pgx/v5/pgtype.Bool",
 			},
 		})
 	if err != nil {

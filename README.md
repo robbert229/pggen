@@ -22,7 +22,6 @@ The following examples compile, and are implemented.
 * example/enums
 * example/device
 * example/function
-* example/nested
 * example/separate_out_dir/out
 * example/erp/order
 * example/ltree
@@ -30,5 +29,6 @@ The following examples compile, and are implemented.
 
 # Feature Unsupported
 
+* example/nested
 * example/composite
 * example/complex_params
