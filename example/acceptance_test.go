@@ -221,6 +221,14 @@ func TestExamples(t *testing.T) {
 			},
 		},
 		{
+			name: "example/pgnet",
+			args: []string{
+				"--schema-glob", "example/pgnet/schema.sql",
+				"--query-glob", "example/pgnet/query.sql",
+				"--go-type", "inet=*net.IPNet",
+			},
+		},
+		{
 			name: "example/separate_out_dir",
 			args: []string{
 				"--schema-glob", "example/separate_out_dir/schema.sql",

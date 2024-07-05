@@ -94,6 +94,8 @@ func (tm Templater) TemplateAll(files []codegen.QueryFile) ([]TemplatedFile, err
 		goQueryFiles[i].Imports = filterImports(goQueryFiles[i].needsPgconnImport, "github.com/jackc/pgx/v5/pgconn", goQueryFiles[i].Imports)
 		// Remove unneeded driver import if possible.
 		goQueryFiles[i].Imports = filterImports(goQueryFiles[i].NeedsVoidSupport, "database/sql/driver", goQueryFiles[i].Imports)
+		// Remove net if possible.
+		goQueryFiles[i].Imports = filterImports(goQueryFiles[i].NeedsNetSupport, "net", goQueryFiles[i].Imports)
 	}
 
 	// Remove self imports.
@@ -125,9 +127,9 @@ func (tm Templater) templateFile(file codegen.QueryFile, isLeader bool) (Templat
 	imports := NewImportSet()
 	imports.AddPackage("context")
 	imports.AddPackage("fmt")
+	imports.AddPackage("net")
 	imports.AddPackage("github.com/jackc/pgx/v5/pgconn")
 	imports.AddPackage("github.com/jackc/pgx/v5")
-
 	if isLeader {
 		imports.AddPackage("database/sql/driver")
 		imports.AddPackage("github.com/jackc/pgx/v5/pgtype")
