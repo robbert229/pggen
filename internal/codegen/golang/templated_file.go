@@ -68,11 +68,89 @@ func (tf TemplatedFile) needsPgconnImport() bool {
 		// Leader files define genericConn.Exec which returns pgconn.CommandTag.
 		return true
 	}
+
 	for _, query := range tf.Queries {
 		if query.ResultKind == ast.ResultKindExec {
 			return true // :exec queries return pgconn.CommandTag
 		}
 	}
+
+	return false
+}
+
+func queryNeedsNetForArray(c TemplatedColumn) bool {
+	at, ok := c.Type.(*gotype.ArrayType)
+	if !ok {
+		return false
+	}
+
+	it, ok := at.Elem.(*gotype.ImportType)
+	if !ok {
+		return false
+	}
+
+	if it.PkgPath != "net" {
+		return false
+	}
+
+	return true
+}
+
+func queryNeedsNetForPtr(c TemplatedColumn) bool {
+	pt, ok := c.Type.(*gotype.PointerType)
+	if !ok {
+		return false
+	}
+
+	it, ok := pt.Elem.(*gotype.ImportType)
+	if !ok {
+		return false
+	}
+
+	if it.PkgPath != "net" {
+		return false
+	}
+
+	return true
+}
+
+func queryNeedsNetForValue(c TemplatedColumn) bool {
+	it, ok := c.Type.(*gotype.ImportType)
+	if !ok {
+		return false
+	}
+
+	if it.PkgPath != "net" {
+		return false
+	}
+
+	return true
+}
+
+func queryNeedsNetSupport(q TemplatedQuery) bool {
+	for _, c := range q.ScanCols {
+		if queryNeedsNetForPtr(c) ||
+			queryNeedsNetForArray(c) ||
+			queryNeedsNetForValue(c) {
+			return true
+		}
+
+	}
+
+	for _, o := range q.Inputs {
+		_ = o
+	}
+
+	return false
+}
+
+func (tf TemplatedFile) NeedsNetSupport() bool {
+	for _, q := range tf.Queries {
+		if queryNeedsNetSupport(q) {
+			return true
+		}
+	}
+
 	return false
 }
 
