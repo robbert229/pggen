@@ -49,6 +49,19 @@ func TestExamples(t *testing.T) {
 			},
 		},
 		{
+			name: "example/citext",
+			args: []string{
+				"--schema-glob", "example/citext/schema.sql",
+				"--query-glob", "example/citext/query.sql",
+				"--go-type", "_bool=[]bool",
+				"--go-type", "bool=bool",
+				"--go-type", "int8=int",
+				"--go-type", "int4=int",
+				"--go-type", "text=string",
+				"--go-type", "citext=github.com/jackc/pgx/v5/pgtype.Text",
+			},
+		},
+		{
 			name: "example/composite",
 			args: []string{
 				"--schema-glob", "example/composite/schema.sql",
@@ -58,7 +71,6 @@ func TestExamples(t *testing.T) {
 				"--go-type", "int8=int",
 				"--go-type", "int4=int",
 				"--go-type", "text=string",
-				"--go-type", "citext=github.com/jackc/pgx/v5/pgtype.Text",
 			},
 		},
 		{

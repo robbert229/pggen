@@ -1,17 +1,31 @@
 package out
 
 import (
-	"github.com/robbert229/pggen"
-	"github.com/robbert229/pggen/internal/pgtest"
-	"github.com/stretchr/testify/assert"
+	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/robbert229/pggen"
+	"github.com/robbert229/pggen/internal/pgtest"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGenerate_Go_Example_SeparateOutDir(t *testing.T) {
 	conn, cleanupFunc := pgtest.NewPostgresSchema(t, []string{
 		"../schema.sql",
+	}, func(config *pgxpool.Config) {
+		config.AfterConnect = func(ctx context.Context, c *pgx.Conn) error {
+			err := Register(ctx, c)
+			if err != nil {
+				return fmt.Errorf("failed to register types: %w", err)
+			}
+
+			return nil
+		}
 	})
 	defer cleanupFunc()
 

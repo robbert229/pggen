@@ -12,6 +12,7 @@ import (
 )
 
 var _ genericConn = (*pgx.Conn)(nil)
+var _ RegisterConn = (*pgx.Conn)(nil)
 
 // Querier is a typesafe Go interface backed by SQL queries.
 type Querier interface {
@@ -43,23 +44,16 @@ type genericConn interface {
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
-
-	LoadType(ctx context.Context, typeName string) (*pgtype.Type, error)
-	TypeMap() *pgtype.Map
 }
 
 // NewQuerier creates a DBQuerier that implements Querier.
 func NewQuerier(ctx context.Context, conn genericConn) (*DBQuerier, error) {
-	if err := register(ctx, conn); err != nil {
-		return nil, fmt.Errorf("failed to create new querier: %w", err)
-	}
-
 	return &DBQuerier{
 		conn: conn, 
 	}, nil
 }
 
-type typeHook func(ctx context.Context, conn genericConn) error
+type typeHook func(ctx context.Context, conn RegisterConn) error
 
 var typeHooks []typeHook
 
@@ -67,7 +61,14 @@ func addHook(hook typeHook) {
 	typeHooks = append(typeHooks, hook)
 }
 
-func register(ctx context.Context, conn genericConn) error {
+type RegisterConn interface {
+	LoadType(ctx context.Context, typeName string) (*pgtype.Type, error)
+	TypeMap() *pgtype.Map
+}
+
+func Register(ctx context.Context, conn RegisterConn) error {
+  
+
 	for _, hook := range typeHooks {
 		if err := hook(ctx, conn); err != nil {
 			return err
@@ -89,7 +90,7 @@ type Device struct {
 // register_newDeviceTypeEnum registers the given postgres type with pgx.
 func register_newDeviceTypeEnum(
 	ctx context.Context,
-	conn genericConn,
+	conn RegisterConn,
 ) error {
 	t, err := conn.LoadType(
 		ctx,
@@ -114,7 +115,7 @@ func register_newDeviceTypeEnum(
 	return nil
 }
 
-func codec_newDeviceTypeEnum(conn genericConn) (pgtype.Codec, error) {
+func codec_newDeviceTypeEnum(conn RegisterConn) (pgtype.Codec, error) {
 	return &pgtype.EnumCodec{}, nil
 }
 
@@ -141,7 +142,7 @@ func (d DeviceType) String() string { return string(d) }
 
 
 	// codec_newDevice is a codec for the composite type of the same name
-	func codec_newDevice(conn genericConn) (pgtype.Codec, error) {
+	func codec_newDevice(conn RegisterConn) (pgtype.Codec, error) {
 		
 		    field0, ok := conn.TypeMap().TypeForName("macaddr")
 			if !ok {
@@ -173,7 +174,7 @@ func (d DeviceType) String() string { return string(d) }
 
 	func register_newDevice(
 		ctx context.Context,
-		conn genericConn,
+		conn RegisterConn,
 	) error {
 		t, err := conn.LoadType(
 			ctx,
@@ -195,7 +196,7 @@ func (d DeviceType) String() string { return string(d) }
 
 
 	// codec_newDeviceTypeArray is a codec for the composite type of the same name
-	func codec_newDeviceTypeArray(conn genericConn) (pgtype.Codec, error) {
+	func codec_newDeviceTypeArray(conn RegisterConn) (pgtype.Codec, error) {
 		elementType, ok := conn.TypeMap().TypeForName("device_type")
 		if !ok {
 			return nil, fmt.Errorf("type not found: device_type")
@@ -208,7 +209,7 @@ func (d DeviceType) String() string { return string(d) }
 
 	func register_newDeviceTypeArray(
 		ctx context.Context,
-		conn genericConn,
+		conn RegisterConn,
 	) error {
 		t, err := conn.LoadType(
 			ctx,
@@ -217,7 +218,7 @@ func (d DeviceType) String() string { return string(d) }
 		if err != nil {
 			return fmt.Errorf("newDeviceTypeArray failed to load type: %w", err)
 		}
-		
+
 		conn.TypeMap().RegisterType(t)
 
 		return nil

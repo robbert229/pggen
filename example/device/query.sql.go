@@ -12,6 +12,7 @@ import (
 )
 
 var _ genericConn = (*pgx.Conn)(nil)
+var _ RegisterConn = (*pgx.Conn)(nil)
 
 // Querier is a typesafe Go interface backed by SQL queries.
 type Querier interface {
@@ -41,23 +42,16 @@ type genericConn interface {
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
-
-	LoadType(ctx context.Context, typeName string) (*pgtype.Type, error)
-	TypeMap() *pgtype.Map
 }
 
 // NewQuerier creates a DBQuerier that implements Querier.
 func NewQuerier(ctx context.Context, conn genericConn) (*DBQuerier, error) {
-	if err := register(ctx, conn); err != nil {
-		return nil, fmt.Errorf("failed to create new querier: %w", err)
-	}
-
 	return &DBQuerier{
 		conn: conn, 
 	}, nil
 }
 
-type typeHook func(ctx context.Context, conn genericConn) error
+type typeHook func(ctx context.Context, conn RegisterConn) error
 
 var typeHooks []typeHook
 
@@ -65,7 +59,14 @@ func addHook(hook typeHook) {
 	typeHooks = append(typeHooks, hook)
 }
 
-func register(ctx context.Context, conn genericConn) error {
+type RegisterConn interface {
+	LoadType(ctx context.Context, typeName string) (*pgtype.Type, error)
+	TypeMap() *pgtype.Map
+}
+
+func Register(ctx context.Context, conn RegisterConn) error {
+  
+
 	for _, hook := range typeHooks {
 		if err := hook(ctx, conn); err != nil {
 			return err
@@ -101,7 +102,7 @@ func (d DeviceType) String() string { return string(d) }
 
 
 	// codec_newUser is a codec for the composite type of the same name
-	func codec_newUser(conn genericConn) (pgtype.Codec, error) {
+	func codec_newUser(conn RegisterConn) (pgtype.Codec, error) {
 		
 		    field0, ok := conn.TypeMap().TypeForName("int8")
 			if !ok {
@@ -133,7 +134,7 @@ func (d DeviceType) String() string { return string(d) }
 
 	func register_newUser(
 		ctx context.Context,
-		conn genericConn,
+		conn RegisterConn,
 	) error {
 		t, err := conn.LoadType(
 			ctx,

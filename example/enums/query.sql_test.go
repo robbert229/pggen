@@ -2,10 +2,13 @@ package enums
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/robbert229/pggen/internal/pgtest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,10 +17,25 @@ import (
 func TestNewQuerier_FindAllDevices(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
+	pool, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"}, func(config *pgxpool.Config) {
+		config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+			err := Register(ctx, conn)
+			if err != nil {
+				return fmt.Errorf("failed to register types: %w", err)
+			}
+
+			return nil
+		}
+	})
+
 	defer cleanup()
 
+	conn, err := pool.Acquire(context.Background())
+	require.NoError(t, err)
+	defer conn.Release()
+
 	q, err := NewQuerier(context.Background(), conn)
+
 	require.NoError(t, err)
 
 	mac, _ := net.ParseMAC("00:00:5e:00:53:01")
@@ -48,10 +66,25 @@ var allDeviceTypes = []DeviceType{
 func TestNewQuerier_FindOneDeviceArray(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
+	pool, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"}, func(config *pgxpool.Config) {
+		config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+			err := Register(ctx, conn)
+			if err != nil {
+				return fmt.Errorf("failed to register types: %w", err)
+			}
+
+			return nil
+		}
+	})
+
 	defer cleanup()
 
+	conn, err := pool.Acquire(context.Background())
+	require.NoError(t, err)
+	defer conn.Release()
+
 	q, err := NewQuerier(context.Background(), conn)
+
 	require.NoError(t, err)
 
 	t.Run("FindOneDeviceArray", func(t *testing.T) {
@@ -64,10 +97,25 @@ func TestNewQuerier_FindOneDeviceArray(t *testing.T) {
 func TestNewQuerier_FindManyDeviceArray(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
+	pool, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"}, func(config *pgxpool.Config) {
+		config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+			err := Register(ctx, conn)
+			if err != nil {
+				return fmt.Errorf("failed to register types: %w", err)
+			}
+
+			return nil
+		}
+	})
+
 	defer cleanup()
 
+	conn, err := pool.Acquire(context.Background())
+	require.NoError(t, err)
+	defer conn.Release()
+
 	q, err := NewQuerier(context.Background(), conn)
+
 	require.NoError(t, err)
 
 	t.Run("FindManyDeviceArray", func(t *testing.T) {
@@ -80,10 +128,25 @@ func TestNewQuerier_FindManyDeviceArray(t *testing.T) {
 func TestNewQuerier_FindManyDeviceArrayWithNum(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
+	pool, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"}, func(config *pgxpool.Config) {
+		config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+			err := Register(ctx, conn)
+			if err != nil {
+				return fmt.Errorf("failed to register types: %w", err)
+			}
+
+			return nil
+		}
+	})
+
 	defer cleanup()
 
+	conn, err := pool.Acquire(context.Background())
+	require.NoError(t, err)
+	defer conn.Release()
+
 	q, err := NewQuerier(context.Background(), conn)
+
 	require.NoError(t, err)
 
 	one, two := int32(1), int32(2)
@@ -101,10 +164,25 @@ func TestNewQuerier_FindManyDeviceArrayWithNum(t *testing.T) {
 func TestNewQuerier_EnumInsideComposite(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
+	pool, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"}, func(config *pgxpool.Config) {
+		config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+			err := Register(ctx, conn)
+			if err != nil {
+				return fmt.Errorf("failed to register types: %w", err)
+			}
+
+			return nil
+		}
+	})
+
 	defer cleanup()
 
+	conn, err := pool.Acquire(context.Background())
+	require.NoError(t, err)
+	defer conn.Release()
+
 	q, err := NewQuerier(context.Background(), conn)
+
 	require.NoError(t, err)
 
 	mac, _ := net.ParseMAC("08:00:2b:01:02:03")

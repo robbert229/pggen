@@ -90,7 +90,7 @@ func (e EnumTranscoderDeclarer) Declare(string) (string, error) {
 // register_{{ .FuncName }} registers the given postgres type with pgx.
 func register_{{ .FuncName }}(
 	ctx context.Context,
-	conn genericConn,
+	conn RegisterConn,
 ) error {
 	t, err := conn.LoadType(
 		ctx,
@@ -115,7 +115,7 @@ func register_{{ .FuncName }}(
 	return nil
 }
 
-func codec_{{ .FuncName }}(conn genericConn) (pgtype.Codec, error) {
+func codec_{{ .FuncName }}(conn RegisterConn) (pgtype.Codec, error) {
 	return &pgtype.EnumCodec{}, nil
 }
 

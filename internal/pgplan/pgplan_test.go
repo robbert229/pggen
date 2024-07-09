@@ -1,13 +1,15 @@
 package pgplan
 
 import (
+	"context"
+	"testing"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/robbert229/pggen/internal/pgtest"
 	"github.com/robbert229/pggen/internal/texts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestParseNode(t *testing.T) {
@@ -51,7 +53,7 @@ func TestParseNode(t *testing.T) {
 }
 
 func TestParseNode_DB(t *testing.T) {
-	conn, cleanupFunc := pgtest.NewPostgresSchemaString(t, texts.Dedent(`
+	pool, cleanupFunc := pgtest.NewPostgresSchemaString(t, texts.Dedent(`
 		CREATE TABLE author (
 			author_id int PRIMARY KEY
 		);
@@ -135,7 +137,11 @@ func TestParseNode_DB(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.sql, func(t *testing.T) {
-			got, err := ExplainQuery(conn, tt.sql)
+			conn, err := pool.Acquire(context.Background())
+			require.NoError(t, err)
+			defer conn.Release()
+
+			got, err := ExplainQuery(conn.Conn(), tt.sql)
 			require.NoError(t, err)
 
 			opts := cmp.Options{

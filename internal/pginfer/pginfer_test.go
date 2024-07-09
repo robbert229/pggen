@@ -7,6 +7,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/robbert229/pggen/internal/ast"
 	"github.com/robbert229/pggen/internal/difftest"
 	"github.com/robbert229/pggen/internal/pg"
@@ -17,7 +19,7 @@ import (
 )
 
 func TestInferrer_InferTypes(t *testing.T) {
-	conn, cleanupFunc := pgtest.NewPostgresSchemaString(t, texts.Dedent(`
+	pool, cleanup := pgtest.NewPostgresSchemaString(t, texts.Dedent(`
 		CREATE TABLE author (
 			author_id  serial PRIMARY KEY,
 			first_name text NOT NULL,
@@ -31,8 +33,16 @@ func TestInferrer_InferTypes(t *testing.T) {
 		);
 
 		CREATE DOMAIN us_postal_code AS text;
-	`))
-	defer cleanupFunc()
+	`), func(config *pgxpool.Config) {
+		config.AfterConnect = func(ctx context.Context, c *pgx.Conn) error {
+			return pg.Register(ctx, c)
+		}
+	})
+	defer cleanup()
+
+	conn, err := pool.Acquire(context.Background())
+	require.NoError(t, err)
+	defer conn.Release()
 
 	q, err := pg.NewQuerier(context.Background(), conn)
 	require.Nil(t, err)
@@ -322,7 +332,11 @@ func TestInferrer_InferTypes(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			inferrer, err := NewInferrer(context.Background(), conn)
+			conn, err := pool.Acquire(context.Background())
+			require.NoError(t, err)
+			defer conn.Release()
+
+			inferrer, err := NewInferrer(context.Background(), conn.Conn())
 			require.Nil(t, err)
 
 			got, err := inferrer.InferTypes(tt.query)
@@ -338,8 +352,12 @@ func TestInferrer_InferTypes(t *testing.T) {
 }
 
 func TestInferrer_InferTypes_Error(t *testing.T) {
-	conn, cleanupFunc := pgtest.NewPostgresSchema(t, []string{
+	pool, cleanupFunc := pgtest.NewPostgresSchema(t, []string{
 		"../../example/author/schema.sql",
+	}, func(config *pgxpool.Config) {
+		config.AfterConnect = func(ctx context.Context, c *pgx.Conn) error {
+			return pg.Register(ctx, c)
+		}
 	})
 	defer cleanupFunc()
 
@@ -385,7 +403,11 @@ func TestInferrer_InferTypes_Error(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.query.Name, func(t *testing.T) {
-			inferrer, err := NewInferrer(context.Background(), conn)
+			conn, err := pool.Acquire(context.Background())
+			require.NoError(t, err)
+			defer conn.Release()
+
+			inferrer, err := NewInferrer(context.Background(), conn.Conn())
 			require.NoError(t, err)
 
 			got, err := inferrer.InferTypes(tt.query)

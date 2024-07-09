@@ -35,7 +35,7 @@ func (a ArrayTranscoderDeclarer) Declare(string) (string, error) {
 	t := template.New("declarer")
 	t = template.Must(t.Parse(`
 	// codec_{{ .FuncName }} is a codec for the composite type of the same name
-	func codec_{{ .FuncName }}(conn genericConn) (pgtype.Codec, error) {
+	func codec_{{ .FuncName }}(conn RegisterConn) (pgtype.Codec, error) {
 		elementType, ok := conn.TypeMap().TypeForName("{{ .PgElemName }}")
 		if !ok {
 			return nil, fmt.Errorf("type not found: {{ .PgElemName }}")
@@ -48,7 +48,7 @@ func (a ArrayTranscoderDeclarer) Declare(string) (string, error) {
 
 	func register_{{ .FuncName }}(
 		ctx context.Context,
-		conn genericConn,
+		conn RegisterConn,
 	) error {
 		t, err := conn.LoadType(
 			ctx,
@@ -57,7 +57,7 @@ func (a ArrayTranscoderDeclarer) Declare(string) (string, error) {
 		if err != nil {
 			return fmt.Errorf("{{ .FuncName }} failed to load type: %w", err)
 		}
-		
+
 		conn.TypeMap().RegisterType(t)
 
 		return nil

@@ -84,6 +84,7 @@ func Generate(opts GenerateOptions) (mErr error) {
 	// Postgres connection.
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
+
 	pgConn, errEnricher, cleanup, err := connectPostgres(ctx, opts)
 	if err != nil {
 		return fmt.Errorf("connect postgres: %w", err)

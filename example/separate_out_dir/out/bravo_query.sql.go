@@ -9,6 +9,7 @@ import (
 )
 
 var _ genericConn = (*pgx.Conn)(nil)
+var _ RegisterConn = (*pgx.Conn)(nil)
 
 const bravoSQL = `SELECT 'bravo' as output;`
 

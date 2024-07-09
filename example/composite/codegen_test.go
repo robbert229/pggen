@@ -24,12 +24,11 @@ func TestGenerate_Go_Example_Composite(t *testing.T) {
 			Language:         pggen.LangGo,
 			InlineParamCount: 2,
 			TypeOverrides: map[string]string{
-				"_bool":  "[]bool",
-				"bool":   "bool",
-				"int8":   "int",
-				"int4":   "int",
-				"text":   "string",
-				"citext": "github.com/jackc/pgx/v5/pgtype.Text",
+				"_bool": "[]bool",
+				"bool":  "bool",
+				"int8":  "int",
+				"int4":  "int",
+				"text":  "string",
 			},
 		})
 	if err != nil {

@@ -10,6 +10,7 @@ import (
 )
 
 var _ genericConn = (*pgx.Conn)(nil)
+var _ RegisterConn = (*pgx.Conn)(nil)
 
 const findOrdersByPriceSQL = `SELECT * FROM orders WHERE order_total > $1;`
 

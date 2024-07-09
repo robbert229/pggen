@@ -11,6 +11,7 @@ import (
 )
 
 var _ genericConn = (*pgx.Conn)(nil)
+var _ RegisterConn = (*pgx.Conn)(nil)
 
 // Querier is a typesafe Go interface backed by SQL queries.
 type Querier interface {
@@ -36,23 +37,16 @@ type genericConn interface {
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
-
-	LoadType(ctx context.Context, typeName string) (*pgtype.Type, error)
-	TypeMap() *pgtype.Map
 }
 
 // NewQuerier creates a DBQuerier that implements Querier.
 func NewQuerier(ctx context.Context, conn genericConn) (*DBQuerier, error) {
-	if err := register(ctx, conn); err != nil {
-		return nil, fmt.Errorf("failed to create new querier: %w", err)
-	}
-
 	return &DBQuerier{
 		conn: conn, 
 	}, nil
 }
 
-type typeHook func(ctx context.Context, conn genericConn) error
+type typeHook func(ctx context.Context, conn RegisterConn) error
 
 var typeHooks []typeHook
 
@@ -60,7 +54,14 @@ func addHook(hook typeHook) {
 	typeHooks = append(typeHooks, hook)
 }
 
-func register(ctx context.Context, conn genericConn) error {
+type RegisterConn interface {
+	LoadType(ctx context.Context, typeName string) (*pgtype.Type, error)
+	TypeMap() *pgtype.Map
+}
+
+func Register(ctx context.Context, conn RegisterConn) error {
+  
+
 	for _, hook := range typeHooks {
 		if err := hook(ctx, conn); err != nil {
 			return err
@@ -95,7 +96,7 @@ type ProductImageType struct {
 
 
 	// codec_newDimensions is a codec for the composite type of the same name
-	func codec_newDimensions(conn genericConn) (pgtype.Codec, error) {
+	func codec_newDimensions(conn RegisterConn) (pgtype.Codec, error) {
 		
 		    field0, ok := conn.TypeMap().TypeForName("int4")
 			if !ok {
@@ -127,7 +128,7 @@ type ProductImageType struct {
 
 	func register_newDimensions(
 		ctx context.Context,
-		conn genericConn,
+		conn RegisterConn,
 	) error {
 		t, err := conn.LoadType(
 			ctx,
@@ -149,7 +150,7 @@ type ProductImageType struct {
 
 
 	// codec_newProductImageSetType is a codec for the composite type of the same name
-	func codec_newProductImageSetType(conn genericConn) (pgtype.Codec, error) {
+	func codec_newProductImageSetType(conn RegisterConn) (pgtype.Codec, error) {
 		
 		    field0, ok := conn.TypeMap().TypeForName("text")
 			if !ok {
@@ -191,7 +192,7 @@ type ProductImageType struct {
 
 	func register_newProductImageSetType(
 		ctx context.Context,
-		conn genericConn,
+		conn RegisterConn,
 	) error {
 		t, err := conn.LoadType(
 			ctx,
@@ -213,7 +214,7 @@ type ProductImageType struct {
 
 
 	// codec_newProductImageType is a codec for the composite type of the same name
-	func codec_newProductImageType(conn genericConn) (pgtype.Codec, error) {
+	func codec_newProductImageType(conn RegisterConn) (pgtype.Codec, error) {
 		
 		    field0, ok := conn.TypeMap().TypeForName("text")
 			if !ok {
@@ -245,7 +246,7 @@ type ProductImageType struct {
 
 	func register_newProductImageType(
 		ctx context.Context,
-		conn genericConn,
+		conn RegisterConn,
 	) error {
 		t, err := conn.LoadType(
 			ctx,
@@ -267,7 +268,7 @@ type ProductImageType struct {
 
 
 	// codec_newProductImageTypeArray is a codec for the composite type of the same name
-	func codec_newProductImageTypeArray(conn genericConn) (pgtype.Codec, error) {
+	func codec_newProductImageTypeArray(conn RegisterConn) (pgtype.Codec, error) {
 		elementType, ok := conn.TypeMap().TypeForName("product_image_type")
 		if !ok {
 			return nil, fmt.Errorf("type not found: product_image_type")
@@ -280,7 +281,7 @@ type ProductImageType struct {
 
 	func register_newProductImageTypeArray(
 		ctx context.Context,
-		conn genericConn,
+		conn RegisterConn,
 	) error {
 		t, err := conn.LoadType(
 			ctx,
@@ -289,7 +290,7 @@ type ProductImageType struct {
 		if err != nil {
 			return fmt.Errorf("newProductImageTypeArray failed to load type: %w", err)
 		}
-		
+
 		conn.TypeMap().RegisterType(t)
 
 		return nil

@@ -11,6 +11,7 @@ import (
 )
 
 var _ genericConn = (*pgx.Conn)(nil)
+var _ RegisterConn = (*pgx.Conn)(nil)
 
 // Querier is a typesafe Go interface backed by SQL queries.
 type Querier interface {
@@ -34,23 +35,16 @@ type genericConn interface {
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
-
-	LoadType(ctx context.Context, typeName string) (*pgtype.Type, error)
-	TypeMap() *pgtype.Map
 }
 
 // NewQuerier creates a DBQuerier that implements Querier.
 func NewQuerier(ctx context.Context, conn genericConn) (*DBQuerier, error) {
-	if err := register(ctx, conn); err != nil {
-		return nil, fmt.Errorf("failed to create new querier: %w", err)
-	}
-
 	return &DBQuerier{
 		conn: conn, 
 	}, nil
 }
 
-type typeHook func(ctx context.Context, conn genericConn) error
+type typeHook func(ctx context.Context, conn RegisterConn) error
 
 var typeHooks []typeHook
 
@@ -58,7 +52,14 @@ func addHook(hook typeHook) {
 	typeHooks = append(typeHooks, hook)
 }
 
-func register(ctx context.Context, conn genericConn) error {
+type RegisterConn interface {
+	LoadType(ctx context.Context, typeName string) (*pgtype.Type, error)
+	TypeMap() *pgtype.Map
+}
+
+func Register(ctx context.Context, conn RegisterConn) error {
+  
+
 	for _, hook := range typeHooks {
 		if err := hook(ctx, conn); err != nil {
 			return err
@@ -79,7 +80,7 @@ type Alpha struct {
 
 
 	// codec_newAlpha is a codec for the composite type of the same name
-	func codec_newAlpha(conn genericConn) (pgtype.Codec, error) {
+	func codec_newAlpha(conn RegisterConn) (pgtype.Codec, error) {
 		
 		    field0, ok := conn.TypeMap().TypeForName("text")
 			if !ok {
@@ -101,7 +102,7 @@ type Alpha struct {
 
 	func register_newAlpha(
 		ctx context.Context,
-		conn genericConn,
+		conn RegisterConn,
 	) error {
 		t, err := conn.LoadType(
 			ctx,
@@ -123,7 +124,7 @@ type Alpha struct {
 
 
 	// codec_newAlphaArray is a codec for the composite type of the same name
-	func codec_newAlphaArray(conn genericConn) (pgtype.Codec, error) {
+	func codec_newAlphaArray(conn RegisterConn) (pgtype.Codec, error) {
 		elementType, ok := conn.TypeMap().TypeForName("alpha")
 		if !ok {
 			return nil, fmt.Errorf("type not found: alpha")
@@ -136,7 +137,7 @@ type Alpha struct {
 
 	func register_newAlphaArray(
 		ctx context.Context,
-		conn genericConn,
+		conn RegisterConn,
 	) error {
 		t, err := conn.LoadType(
 			ctx,
@@ -145,7 +146,7 @@ type Alpha struct {
 		if err != nil {
 			return fmt.Errorf("newAlphaArray failed to load type: %w", err)
 		}
-		
+
 		conn.TypeMap().RegisterType(t)
 
 		return nil

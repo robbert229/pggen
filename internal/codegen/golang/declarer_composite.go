@@ -127,7 +127,7 @@ func (c CompositeTranscoderDeclarer) Declare(pkgPath string) (string, error) {
 	t := template.New("declarer")
 	t = template.Must(t.Parse(`
 	// codec_{{ .FuncName }} is a codec for the composite type of the same name
-	func codec_{{ .FuncName }}(conn genericConn) (pgtype.Codec, error) {
+	func codec_{{ .FuncName }}(conn RegisterConn) (pgtype.Codec, error) {
 		{{ range $i, $val := .Columns }}
 		    field{{ $i }}, ok := conn.TypeMap().TypeForName("{{ $val.PgFieldTypeName }}")
 			if !ok {
@@ -149,7 +149,7 @@ func (c CompositeTranscoderDeclarer) Declare(pkgPath string) (string, error) {
 
 	func register_{{ .FuncName }}(
 		ctx context.Context,
-		conn genericConn,
+		conn RegisterConn,
 	) error {
 		t, err := conn.LoadType(
 			ctx,

@@ -1,50 +1,45 @@
-package device
+package citext
 
 import (
-	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/robbert229/pggen"
 	"github.com/robbert229/pggen/internal/pgtest"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGenerate_Go_Example_Device(t *testing.T) {
-	pool, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"}, func(config *pgxpool.Config) {
-		config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
-			err := Register(ctx, conn)
-			if err != nil {
-				return fmt.Errorf("failed to register types: %w", err)
-			}
-
-			return nil
-		}
-	})
-
-	defer cleanup()
+func TestGenerate_Go_Example_CiText(t *testing.T) {
+	conn, cleanupFunc := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
+	defer cleanupFunc()
 
 	tmpDir := t.TempDir()
 	err := pggen.Generate(
 		pggen.GenerateOptions{
-			ConnString:       pool.Config().ConnString(),
+			ConnString:       conn.Config().ConnString(),
 			QueryFiles:       []string{"query.sql"},
 			OutputDir:        tmpDir,
-			GoPackage:        "device",
+			GoPackage:        "citext",
 			Language:         pggen.LangGo,
 			InlineParamCount: 2,
+			TypeOverrides: map[string]string{
+				"_bool":  "[]bool",
+				"bool":   "bool",
+				"int8":   "int",
+				"int4":   "int",
+				"text":   "string",
+				"citext": "github.com/jackc/pgx/v5/pgtype.Text",
+			},
 		})
 	if err != nil {
-		t.Fatalf("Generate() example/device: %s", err)
+		t.Fatalf("Generate(): %s", err)
 	}
 
 	wantQueryFile := "query.sql.go"
 	gotQueryFile := filepath.Join(tmpDir, "query.sql.go")
-	assert.FileExists(t, gotQueryFile, "Generate() should emit query.sql.go")
+	assert.FileExists(t, gotQueryFile,
+		"Generate() should emit query.sql.go")
 	wantQueries, err := os.ReadFile(wantQueryFile)
 	if err != nil {
 		t.Fatalf("read wanted query.go.sql: %s", err)

@@ -13,7 +13,7 @@ type SomeTableNested struct {
 
 
 	// codec_newFooType is a codec for the composite type of the same name
-	func codec_newFooType(conn genericConn) (pgtype.Codec, error) {
+	func codec_newFooType(conn RegisterConn) (pgtype.Codec, error) {
 		
 		    field0, ok := conn.TypeMap().TypeForName("text")
 			if !ok {
@@ -35,7 +35,7 @@ type SomeTableNested struct {
 
 	func register_newFooType(
 		ctx context.Context,
-		conn genericConn,
+		conn RegisterConn,
 	) error {
 		t, err := conn.LoadType(
 			ctx,
@@ -57,7 +57,7 @@ type SomeTableNested struct {
 
 
 	// codec_newSomeTableNested is a codec for the composite type of the same name
-	func codec_newSomeTableNested(conn genericConn) (pgtype.Codec, error) {
+	func codec_newSomeTableNested(conn RegisterConn) (pgtype.Codec, error) {
 		
 		    field0, ok := conn.TypeMap().TypeForName("foo_type")
 			if !ok {
@@ -89,7 +89,7 @@ type SomeTableNested struct {
 
 	func register_newSomeTableNested(
 		ctx context.Context,
-		conn genericConn,
+		conn RegisterConn,
 	) error {
 		t, err := conn.LoadType(
 			ctx,
