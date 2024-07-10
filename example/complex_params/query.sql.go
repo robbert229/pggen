@@ -365,7 +365,7 @@ const paramNested2ArraySQL = `SELECT $1::product_image_type[];`
 // ParamNested2Array implements Querier.ParamNested2Array.
 func (q *DBQuerier) ParamNested2Array(ctx context.Context, images []ProductImageType) ([]ProductImageType, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "ParamNested2Array")
-	rows, err := q.conn.Query(ctx, paramNested2ArraySQL, q.types.NOOP(images))
+	rows, err := q.conn.Query(ctx, paramNested2ArraySQL, images)
 	if err != nil {
 		return nil, fmt.Errorf("query ParamNested2Array: %w", err)
 	}

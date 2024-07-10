@@ -259,11 +259,11 @@ func (tq TemplatedQuery) EmitParamNames() string {
 			}
 			switch gotype.UnwrapNestedType(typ.Elem).(type) {
 			case *gotype.CompositeType, *gotype.EnumType:
-				sb.WriteString("q.types.")
-				sb.WriteString("NOOP") // NameArrayInitFunc(typ)
-				sb.WriteString("(")
+				//sb.WriteString("q.types.")
+				//sb.WriteString("NOOP") // NameArrayInitFunc(typ)
+				//sb.WriteString("(")
 				sb.WriteString(name)
-				sb.WriteString(")")
+				//sb.WriteString(")")
 			default:
 				sb.WriteString(name)
 			}

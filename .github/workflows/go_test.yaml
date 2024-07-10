@@ -1,9 +1,17 @@
-name: Test
-on: push
+name: test
+
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+    branches:
+      - '*'
+
 jobs:
   test:
     name: go test
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     services:
       postgres:
         image: postgres
@@ -19,11 +27,17 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: buildjet/setup-go@v4
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
         with:
-          go-version: '1.21.5'
-      - run: go test ./...
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+      - name: Set up Go
+        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        with:
+          go-version-file: 'go.mod'
       - run: go test --tags=acceptance_test ./...
         env:
           DOCKER_API_VERSION: 1.39

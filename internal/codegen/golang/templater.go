@@ -89,7 +89,7 @@ func (tm Templater) TemplateAll(files []codegen.QueryFile) ([]TemplatedFile, err
 	// Add declarers to leader file.
 	goQueryFiles[firstIndex].Declarers = allDeclarers.ListAll()
 
-	for i, _ := range goQueryFiles {
+	for i := range goQueryFiles {
 		// Remove unneeded pgconn import if possible.
 		goQueryFiles[i].Imports = filterImports(goQueryFiles[i].needsPgconnImport, "github.com/jackc/pgx/v5/pgconn", goQueryFiles[i].Imports)
 		// Remove unneeded driver import if possible.

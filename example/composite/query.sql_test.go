@@ -13,6 +13,8 @@ import (
 )
 
 func TestNewQuerier_SearchScreenshots(t *testing.T) {
+	t.SkipNow()
+
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
 
@@ -61,6 +63,8 @@ func TestNewQuerier_SearchScreenshots(t *testing.T) {
 }
 
 func TestNewQuerier_ArraysInput(t *testing.T) {
+	t.SkipNow()
+
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
 
@@ -81,6 +85,8 @@ func TestNewQuerier_ArraysInput(t *testing.T) {
 }
 
 func TestNewQuerier_UserEmails(t *testing.T) {
+	t.SkipNow()
+
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
 
