@@ -1,5 +1,5 @@
-[![Test](https://github.com/robbert229/pggen/workflows/Test/badge.svg)](https://github.com/robbert229/pggen/actions?query=workflow%3ATest) 
-[![Lint](https://github.com/robbert229/pggen/workflows/Lint/badge.svg)](https://github.com/robbert229/pggen/actions?query=workflow%3ALint) 
+[![test](https://github.com/robbert229/pggen/workflows/test/badge.svg)](https://github.com/robbert229/pggen/actions?query=workflow%3Atest) 
+[![lint](https://github.com/robbert229/pggen/workflows/lint/badge.svg)](https://github.com/robbert229/pggen/actions?query=workflow%3Alint) 
 [![GoReportCard](https://goreportcard.com/badge/github.com/robbert229/pggen)](https://goreportcard.com/report/github.com/robbert229/pggen)
 
 # Notice
