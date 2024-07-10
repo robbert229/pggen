@@ -72,6 +72,8 @@ func TestNewQuerier_FindAuthors(t *testing.T) {
 			LastName:  "clinton",
 			Suffix:    "jr",
 		})
+		require.NoError(t, err)
+
 		authors, err := q.FindAuthors(context.Background(), "bill")
 		require.NoError(t, err)
 		want := []FindAuthorsRow{

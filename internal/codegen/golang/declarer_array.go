@@ -70,7 +70,7 @@ func (a ArrayTranscoderDeclarer) Declare(string) (string, error) {
 
 	b := &strings.Builder{}
 	b.Grow(256)
-	t.Execute(b, struct {
+	err := t.Execute(b, struct {
 		FuncName    string
 		Fields      string
 		PgArrayName string
@@ -81,5 +81,9 @@ func (a ArrayTranscoderDeclarer) Declare(string) (string, error) {
 		PgArrayName: strconv.Quote(strconv.Quote(a.typ.PgArray.Name)),
 		PgElemName:  a.typ.PgArray.Elem.String(),
 	})
+	if err != nil {
+		return "", err
+	}
+
 	return b.String(), nil
 }

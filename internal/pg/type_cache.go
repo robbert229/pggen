@@ -21,16 +21,6 @@ func newTypeCache() *typeCache {
 	}
 }
 
-func lookup() {
-	// !!!fixme
-	// m := pgtype.NewMap() // !!!
-	// m.TypeForValue()     // looks up pg type for go type
-	// m.FormatCodeForOID()
-	// m.TypeForOID()
-	// m.TypeForName()
-
-}
-
 // getOIDs returns the cached OIDS (with the type) and uncached OIDs.
 func (tc *typeCache) getOIDs(oids ...uint32) (map[uint32]Type, map[uint32]struct{}) {
 	cachedTypes := make(map[uint32]Type, len(oids))

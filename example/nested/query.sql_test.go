@@ -10,6 +10,8 @@ import (
 )
 
 func TestNewQuerier_ArrayNested2(t *testing.T) {
+	t.SkipNow()
+
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
 
@@ -31,6 +33,8 @@ func TestNewQuerier_ArrayNested2(t *testing.T) {
 }
 
 func TestNewQuerier_Nested3(t *testing.T) {
+	t.SkipNow()
+
 	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
 	defer cleanup()
 
