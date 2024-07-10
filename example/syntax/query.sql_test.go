@@ -10,9 +10,15 @@ import (
 )
 
 func TestQuerier(t *testing.T) {
-	conn, cleanup := pgtest.NewPostgresSchema(t, nil)
+	pool, cleanup := pgtest.NewPostgresSchema(t, nil)
 	defer cleanup()
+
+	conn, err := pool.Acquire(context.Background())
+	require.NoError(t, err)
+	defer conn.Release()
+
 	q, err := NewQuerier(context.Background(), conn)
+
 	require.NoError(t, err)
 	ctx := context.Background()
 

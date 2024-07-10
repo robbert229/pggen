@@ -7,7 +7,7 @@ type SomeTableEnum struct {
 // register_newDeviceTypeEnum registers the given postgres type with pgx.
 func register_newDeviceTypeEnum(
 	ctx context.Context,
-	conn genericConn,
+	conn RegisterConn,
 ) error {
 	t, err := conn.LoadType(
 		ctx,
@@ -32,7 +32,7 @@ func register_newDeviceTypeEnum(
 	return nil
 }
 
-func codec_newDeviceTypeEnum(conn genericConn) (pgtype.Codec, error) {
+func codec_newDeviceTypeEnum(conn RegisterConn) (pgtype.Codec, error) {
 	return &pgtype.EnumCodec{}, nil
 }
 
@@ -55,7 +55,7 @@ func (d DeviceType) String() string { return string(d) }
 
 
 	// codec_newSomeTableEnum is a codec for the composite type of the same name
-	func codec_newSomeTableEnum(conn genericConn) (pgtype.Codec, error) {
+	func codec_newSomeTableEnum(conn RegisterConn) (pgtype.Codec, error) {
 		
 		    field0, ok := conn.TypeMap().TypeForName("some_table_enum")
 			if !ok {
@@ -77,7 +77,7 @@ func (d DeviceType) String() string { return string(d) }
 
 	func register_newSomeTableEnum(
 		ctx context.Context,
-		conn genericConn,
+		conn RegisterConn,
 	) error {
 		t, err := conn.LoadType(
 			ctx,

@@ -8,7 +8,7 @@ type SomeTable struct {
 
 
 	// codec_newSomeTable is a codec for the composite type of the same name
-	func codec_newSomeTable(conn genericConn) (pgtype.Codec, error) {
+	func codec_newSomeTable(conn RegisterConn) (pgtype.Codec, error) {
 		
 		    field0, ok := conn.TypeMap().TypeForName("int2")
 			if !ok {
@@ -40,7 +40,7 @@ type SomeTable struct {
 
 	func register_newSomeTable(
 		ctx context.Context,
-		conn genericConn,
+		conn RegisterConn,
 	) error {
 		t, err := conn.LoadType(
 			ctx,

@@ -2,13 +2,15 @@ package pg
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/jackc/pgx/v5"
 	"github.com/robbert229/pggen/internal/pgtest"
 	"github.com/robbert229/pggen/internal/texts"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFetchColumns(t *testing.T) {
@@ -43,14 +45,19 @@ func TestFetchColumns(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			conn, cleanup := pgtest.NewPostgresSchemaString(t, tt.schema)
+			pool, cleanup := pgtest.NewPostgresSchemaString(t, tt.schema)
 			defer cleanup()
-			oid := findTableOID(t, conn, "author")
+
+			conn, err := pool.Acquire(context.Background())
+			require.NoError(t, err)
+			defer conn.Release()
+
+			oid := findTableOID(t, conn.Conn(), "author")
 			keys := make([]ColumnKey, len(tt.colNums))
 			for i, num := range tt.colNums {
 				keys[i] = ColumnKey{oid, num}
 			}
-			cols, err := FetchColumns(conn, keys)
+			cols, err := FetchColumns(conn.Conn(), keys)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -64,7 +71,7 @@ func TestFetchColumns(t *testing.T) {
 			}
 
 			// Test cache.
-			cols2, err := FetchColumns(conn, keys)
+			cols2, err := FetchColumns(conn.Conn(), keys)
 			if err != nil {
 				t.Fatal(err)
 			}

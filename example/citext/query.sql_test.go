@@ -1,4 +1,4 @@
-package composite
+package citext
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/robbert229/pggen/internal/difftest"
 	"github.com/robbert229/pggen/internal/pgtest"
@@ -27,7 +28,6 @@ func TestNewQuerier_SearchScreenshots(t *testing.T) {
 			return nil
 		}
 	})
-
 	defer cleanup()
 
 	conn, err := pool.Acquire(context.Background())
@@ -144,7 +144,7 @@ func TestNewQuerier_UserEmails(t *testing.T) {
 	require.NoError(t, err)
 	want := UserEmail{
 		ID:    "foo",
-		Email: "bar@example.com",
+		Email: pgtype.Text{String: "bar@example.com", Valid: true},
 	}
 	difftest.AssertSame(t, want, got)
 }

@@ -2,18 +2,36 @@ package go_pointer_types
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/robbert229/pggen/internal/pgtest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestQuerier_GenSeries1(t *testing.T) {
-	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
+	pool, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"}, func(config *pgxpool.Config) {
+		config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+			err := Register(ctx, conn)
+			if err != nil {
+				return fmt.Errorf("failed to register types: %w", err)
+			}
+
+			return nil
+		}
+	})
+
 	defer cleanup()
 
+	conn, err := pool.Acquire(context.Background())
+	require.NoError(t, err)
+	defer conn.Release()
+
 	q, err := NewQuerier(context.Background(), conn)
+
 	require.NoError(t, err)
 	ctx := context.Background()
 
@@ -26,10 +44,25 @@ func TestQuerier_GenSeries1(t *testing.T) {
 }
 
 func TestQuerier_GenSeries(t *testing.T) {
-	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
+	pool, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"}, func(config *pgxpool.Config) {
+		config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+			err := Register(ctx, conn)
+			if err != nil {
+				return fmt.Errorf("failed to register types: %w", err)
+			}
+
+			return nil
+		}
+	})
+
 	defer cleanup()
 
+	conn, err := pool.Acquire(context.Background())
+	require.NoError(t, err)
+	defer conn.Release()
+
 	q, err := NewQuerier(context.Background(), conn)
+
 	require.NoError(t, err)
 	ctx := context.Background()
 
@@ -44,10 +77,25 @@ func TestQuerier_GenSeries(t *testing.T) {
 }
 
 func TestQuerier_GenSeriesArr1(t *testing.T) {
-	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
+	pool, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"}, func(config *pgxpool.Config) {
+		config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+			err := Register(ctx, conn)
+			if err != nil {
+				return fmt.Errorf("failed to register types: %w", err)
+			}
+
+			return nil
+		}
+	})
+
 	defer cleanup()
 
+	conn, err := pool.Acquire(context.Background())
+	require.NoError(t, err)
+	defer conn.Release()
+
 	q, err := NewQuerier(context.Background(), conn)
+
 	require.NoError(t, err)
 	ctx := context.Background()
 
@@ -59,10 +107,25 @@ func TestQuerier_GenSeriesArr1(t *testing.T) {
 }
 
 func TestQuerier_GenSeriesArr(t *testing.T) {
-	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
+	pool, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"}, func(config *pgxpool.Config) {
+		config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+			err := Register(ctx, conn)
+			if err != nil {
+				return fmt.Errorf("failed to register types: %w", err)
+			}
+
+			return nil
+		}
+	})
+
 	defer cleanup()
 
+	conn, err := pool.Acquire(context.Background())
+	require.NoError(t, err)
+	defer conn.Release()
+
 	q, err := NewQuerier(context.Background(), conn)
+
 	require.NoError(t, err)
 	ctx := context.Background()
 
@@ -74,10 +137,25 @@ func TestQuerier_GenSeriesArr(t *testing.T) {
 }
 
 func TestQuerier_GenSeriesStr(t *testing.T) {
-	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
+	pool, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"}, func(config *pgxpool.Config) {
+		config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+			err := Register(ctx, conn)
+			if err != nil {
+				return fmt.Errorf("failed to register types: %w", err)
+			}
+
+			return nil
+		}
+	})
+
 	defer cleanup()
 
+	conn, err := pool.Acquire(context.Background())
+	require.NoError(t, err)
+	defer conn.Release()
+
 	q, err := NewQuerier(context.Background(), conn)
+
 	require.NoError(t, err)
 	ctx := context.Background()
 

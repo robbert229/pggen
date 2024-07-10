@@ -189,14 +189,18 @@ func TestNewTypeFetcher(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			conn, cleanup := pgtest.NewPostgresSchemaString(t, tt.schema)
+			pool, cleanup := pgtest.NewPostgresSchemaString(t, tt.schema)
 			defer cleanup()
+
+			conn, err := pool.Acquire(context.Background())
+			require.NoError(t, err)
+			defer conn.Release()
 
 			querier, err := NewQuerier(context.Background(), conn)
 			require.NoError(t, err)
 
 			// Act.
-			fetcher, err := NewTypeFetcher(context.Background(), conn)
+			fetcher, err := NewTypeFetcher(context.Background(), conn.Conn())
 			require.NoError(t, err)
 
 			oid := findOIDVal(t, tt.fetchOID, querier)

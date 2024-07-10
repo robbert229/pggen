@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS citext;
+
 CREATE TABLE screenshots (
   id bigint PRIMARY KEY
 );
@@ -18,5 +20,5 @@ CREATE TYPE arrays AS (
 
 CREATE TYPE user_email AS (
   id text,
-  email text
+  email citext
 );

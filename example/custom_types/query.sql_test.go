@@ -2,9 +2,12 @@ package custom_types
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/robbert229/pggen/internal/pgtest"
 	"github.com/robbert229/pggen/internal/texts"
 	"github.com/stretchr/testify/assert"
@@ -12,9 +15,24 @@ import (
 )
 
 func TestQuerier_CustomTypes(t *testing.T) {
-	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
+	pool, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"}, func(config *pgxpool.Config) {
+		config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+			err := Register(ctx, conn)
+			if err != nil {
+				return fmt.Errorf("failed to register types: %w", err)
+			}
+
+			return nil
+		}
+	})
+
 	defer cleanup()
+	conn, err := pool.Acquire(context.Background())
+	require.NoError(t, err)
+	defer conn.Release()
+
 	q, err := NewQuerier(context.Background(), conn)
+
 	require.NoError(t, err)
 	ctx := context.Background()
 
@@ -30,8 +48,22 @@ func TestQuerier_CustomTypes(t *testing.T) {
 }
 
 func TestQuerier_CustomMyInt(t *testing.T) {
-	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
+	pool, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"}, func(config *pgxpool.Config) {
+		config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+			err := Register(ctx, conn)
+			if err != nil {
+				return fmt.Errorf("failed to register types: %w", err)
+			}
+
+			return nil
+		}
+	})
 	defer cleanup()
+
+	conn, err := pool.Acquire(context.Background())
+	require.NoError(t, err)
+	defer conn.Release()
+
 	row := conn.QueryRow(context.Background(), texts.Dedent(`
 		SELECT pt.oid
 		FROM pg_type pt
@@ -41,17 +73,18 @@ func TestQuerier_CustomMyInt(t *testing.T) {
 		LIMIT 1;
 	`))
 	oidVal := uint32(0)
-	err := row.Scan(&oidVal)
+	err = row.Scan(&oidVal)
 	require.NoError(t, err)
 	t.Logf("my_int oid: %d", oidVal)
 
-	conn.TypeMap().RegisterType(&pgtype.Type{
+	conn.Conn().TypeMap().RegisterType(&pgtype.Type{
 		Codec: &pgtype.Int2Codec{},
 		Name:  "my_int",
 		OID:   oidVal,
 	})
 
 	q, err := NewQuerier(context.Background(), conn)
+
 	require.NoError(t, err)
 	ctx := context.Background()
 
@@ -63,9 +96,24 @@ func TestQuerier_CustomMyInt(t *testing.T) {
 }
 
 func TestQuerier_IntArray(t *testing.T) {
-	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
+	pool, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"}, func(config *pgxpool.Config) {
+		config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+			err := Register(ctx, conn)
+			if err != nil {
+				return fmt.Errorf("failed to register types: %w", err)
+			}
+
+			return nil
+		}
+	})
+
 	defer cleanup()
+	conn, err := pool.Acquire(context.Background())
+	require.NoError(t, err)
+	defer conn.Release()
+
 	q, err := NewQuerier(context.Background(), conn)
+
 	require.NoError(t, err)
 	ctx := context.Background()
 

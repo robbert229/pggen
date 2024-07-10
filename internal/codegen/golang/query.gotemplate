@@ -11,6 +11,7 @@ import (
 )
 
 var _ genericConn = (*pgx.Conn)(nil)
+var _ RegisterConn = (*pgx.Conn)(nil)
 
 {{- if .IsLeader -}}
 {{- "\n\n" -}}
@@ -36,23 +37,16 @@ type genericConn interface {
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
-
-	LoadType(ctx context.Context, typeName string) (*pgtype.Type, error)
-	TypeMap() *pgtype.Map
 }
 
 // NewQuerier creates a DBQuerier that implements Querier.
 func NewQuerier(ctx context.Context, conn genericConn) (*DBQuerier, error) {
-	if err := register(ctx, conn); err != nil {
-		return nil, fmt.Errorf("failed to create new querier: %w", err)
-	}
-
 	return &DBQuerier{
 		conn: conn, 
 	}, nil
 }
 
-type typeHook func(ctx context.Context, conn genericConn) error
+type typeHook func(ctx context.Context, conn RegisterConn) error
 
 var typeHooks []typeHook
 
@@ -60,7 +54,20 @@ func addHook(hook typeHook) {
 	typeHooks = append(typeHooks, hook)
 }
 
-func register(ctx context.Context, conn genericConn) error {
+type RegisterConn interface {
+	LoadType(ctx context.Context, typeName string) (*pgtype.Type, error)
+	TypeMap() *pgtype.Map
+}
+
+func Register(ctx context.Context, conn RegisterConn) error {
+  {{ if .NeedsVoidSupport }}
+    conn.TypeMap().RegisterType(&pgtype.Type{
+      Name: "void",
+      OID: 2278,
+      Codec: voidCodec{},
+    })
+  {{ end }}
+
 	for _, hook := range typeHooks {
 		if err := hook(ctx, conn); err != nil {
 			return err
@@ -169,17 +176,6 @@ func (dst *pgVoid) Scan(src any) error {
 // Value implements the database/sql/driver Valuer interface.
 func (src pgVoid) Value() (driver.Value, error) {
 	return nil, nil
-}
-
-func init(){
-	addHook(func(ctx context.Context, conn genericConn) error{
-		conn.TypeMap().RegisterType(&pgtype.Type{
-			Name: "void",
-			OID: 2278,
-			Codec: voidCodec{},
-		})
-		return nil
-	})
 }
 
 {{- end -}}

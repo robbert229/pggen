@@ -2,8 +2,11 @@ package complex_params
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/robbert229/pggen/internal/pgtest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -12,10 +15,25 @@ import (
 func TestNewQuerier_ParamArrayInt(t *testing.T) {
 	t.SkipNow()
 
-	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
+	pool, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"}, func(config *pgxpool.Config) {
+		config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+			err := Register(ctx, conn)
+			if err != nil {
+				return fmt.Errorf("failed to register types: %w", err)
+			}
+
+			return nil
+		}
+	})
+
 	defer cleanup()
 
+	conn, err := pool.Acquire(context.Background())
+	require.NoError(t, err)
+	defer conn.Release()
+
 	q, err := NewQuerier(context.Background(), conn)
+
 	require.NoError(t, err)
 	ctx := context.Background()
 
@@ -31,10 +49,25 @@ func TestNewQuerier_ParamArrayInt(t *testing.T) {
 func TestNewQuerier_ParamNested1(t *testing.T) {
 	t.SkipNow()
 
-	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
+	pool, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"}, func(config *pgxpool.Config) {
+		config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+			err := Register(ctx, conn)
+			if err != nil {
+				return fmt.Errorf("failed to register types: %w", err)
+			}
+
+			return nil
+		}
+	})
+
 	defer cleanup()
 
+	conn, err := pool.Acquire(context.Background())
+	require.NoError(t, err)
+	defer conn.Release()
+
 	q, err := NewQuerier(context.Background(), conn)
+
 	require.NoError(t, err)
 	ctx := context.Background()
 
@@ -50,10 +83,25 @@ func TestNewQuerier_ParamNested1(t *testing.T) {
 func TestNewQuerier_ParamNested2(t *testing.T) {
 	t.SkipNow()
 
-	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
+	pool, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"}, func(config *pgxpool.Config) {
+		config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+			err := Register(ctx, conn)
+			if err != nil {
+				return fmt.Errorf("failed to register types: %w", err)
+			}
+
+			return nil
+		}
+	})
+
 	defer cleanup()
 
+	conn, err := pool.Acquire(context.Background())
+	require.NoError(t, err)
+	defer conn.Release()
+
 	q, err := NewQuerier(context.Background(), conn)
+
 	require.NoError(t, err)
 	ctx := context.Background()
 
@@ -72,10 +120,25 @@ func TestNewQuerier_ParamNested2(t *testing.T) {
 func TestNewQuerier_ParamNested2Array(t *testing.T) {
 	t.SkipNow()
 
-	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
+	pool, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"}, func(config *pgxpool.Config) {
+		config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+			err := Register(ctx, conn)
+			if err != nil {
+				return fmt.Errorf("failed to register types: %w", err)
+			}
+
+			return nil
+		}
+	})
+
 	defer cleanup()
 
+	conn, err := pool.Acquire(context.Background())
+	require.NoError(t, err)
+	defer conn.Release()
+
 	q, err := NewQuerier(context.Background(), conn)
+
 	require.NoError(t, err)
 	ctx := context.Background()
 
@@ -94,10 +157,25 @@ func TestNewQuerier_ParamNested2Array(t *testing.T) {
 func TestNewQuerier_ParamNested3(t *testing.T) {
 	t.SkipNow()
 
-	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
+	pool, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"}, func(config *pgxpool.Config) {
+		config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+			err := Register(ctx, conn)
+			if err != nil {
+				return fmt.Errorf("failed to register types: %w", err)
+			}
+
+			return nil
+		}
+	})
+
 	defer cleanup()
 
+	conn, err := pool.Acquire(context.Background())
+	require.NoError(t, err)
+	defer conn.Release()
+
 	q, err := NewQuerier(context.Background(), conn)
+
 	require.NoError(t, err)
 	ctx := context.Background()
 
@@ -120,12 +198,27 @@ func TestNewQuerier_ParamNested3(t *testing.T) {
 func TestNewQuerier_ParamNested3_QueryAllDataTypes(t *testing.T) {
 	t.SkipNow()
 
-	conn, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"})
+	pool, cleanup := pgtest.NewPostgresSchema(t, []string{"schema.sql"}, func(config *pgxpool.Config) {
+		config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+			err := Register(ctx, conn)
+			if err != nil {
+				return fmt.Errorf("failed to register types: %w", err)
+			}
+
+			return nil
+		}
+	})
+
 	defer cleanup()
 	ctx := context.Background()
 	// dataTypes, err := QueryAllDataTypes(ctx, conn)
 	// require.NoError(t, err)
+	conn, err := pool.Acquire(context.Background())
+	require.NoError(t, err)
+	defer conn.Release()
+
 	q, err := NewQuerier(context.Background(), conn)
+
 	require.NoError(t, err)
 
 	want := ProductImageSetType{

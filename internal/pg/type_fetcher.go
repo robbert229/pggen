@@ -15,6 +15,11 @@ type TypeFetcher struct {
 }
 
 func NewTypeFetcher(ctx context.Context, conn *pgx.Conn) (*TypeFetcher, error) {
+	err := Register(ctx, conn)
+	if err != nil {
+		return nil, err
+	}
+
 	querier, err := NewQuerier(ctx, conn)
 	if err != nil {
 		return nil, err
