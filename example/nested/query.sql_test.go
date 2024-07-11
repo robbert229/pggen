@@ -37,9 +37,9 @@ func TestNewQuerier_ArrayNested2(t *testing.T) {
 	require.NoError(t, err)
 	ctx := context.Background()
 
-	want := []ProductImageType{
-		{Source: "img2", Dimensions: Dimensions{22, 22}},
-		{Source: "img3", Dimensions: Dimensions{33, 33}},
+	want := []*ProductImageType{
+		{Source: "img2", Dimensions: &Dimensions{22, 22}},
+		{Source: "img3", Dimensions: &Dimensions{33, 33}},
 	}
 	t.Run("ArrayNested2", func(t *testing.T) {
 		rows, err := q.ArrayNested2(ctx)
@@ -78,13 +78,13 @@ func TestNewQuerier_Nested3(t *testing.T) {
 	want := []ProductImageSetType{
 		{
 			Name: "name",
-			OrigImage: ProductImageType{
+			OrigImage: &ProductImageType{
 				Source:     "img1",
-				Dimensions: Dimensions{Width: 11, Height: 11},
+				Dimensions: &Dimensions{Width: 11, Height: 11},
 			},
-			Images: []ProductImageType{
-				{Source: "img2", Dimensions: Dimensions{22, 22}},
-				{Source: "img3", Dimensions: Dimensions{33, 33}},
+			Images: []*ProductImageType{
+				{Source: "img2", Dimensions: &Dimensions{22, 22}},
+				{Source: "img3", Dimensions: &Dimensions{33, 33}},
 			},
 		},
 	}

@@ -49,6 +49,13 @@ func TestExamples(t *testing.T) {
 			},
 		},
 		{
+			name: "example/casting",
+			args: []string{
+				"--schema-glob", "example/casting/schema.sql",
+				"--query-glob", "example/casting/query.sql",
+			},
+		},
+		{
 			name: "example/citext",
 			args: []string{
 				"--schema-glob", "example/citext/schema.sql",

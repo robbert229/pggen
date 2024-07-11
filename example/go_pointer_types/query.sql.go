@@ -88,7 +88,7 @@ func (q *DBQuerier) GenSeries1(ctx context.Context) (*int, error) {
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (*int, error) {
-		var item *int
+  var item *int
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
@@ -109,7 +109,7 @@ func (q *DBQuerier) GenSeries(ctx context.Context) ([]*int, error) {
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (*int, error) {
-		var item *int
+  var item *int
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
@@ -130,7 +130,7 @@ func (q *DBQuerier) GenSeriesArr1(ctx context.Context) ([]int, error) {
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) ([]int, error) {
-		var item []int
+  var item []int
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
@@ -151,7 +151,7 @@ func (q *DBQuerier) GenSeriesArr(ctx context.Context) ([][]int, error) {
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) ([]int, error) {
-		var item []int
+  var item []int
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
@@ -173,7 +173,7 @@ func (q *DBQuerier) GenSeriesStr1(ctx context.Context) (*string, error) {
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (*string, error) {
-		var item *string
+  var item *string
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
@@ -194,7 +194,7 @@ func (q *DBQuerier) GenSeriesStr(ctx context.Context) ([]*string, error) {
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (*string, error) {
-		var item *string
+  var item *string
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)

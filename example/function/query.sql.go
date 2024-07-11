@@ -188,8 +188,8 @@ type ListStats struct {
 	
 
 
-	// codec_newListItemArray is a codec for the composite type of the same name
-	func codec_newListItemArray(conn RegisterConn) (pgtype.Codec, error) {
+	// codec_newListItemPtrArray is a codec for the composite type of the same name
+	func codec_newListItemPtrArray(conn RegisterConn) (pgtype.Codec, error) {
 		elementType, ok := conn.TypeMap().TypeForName("list_item")
 		if !ok {
 			return nil, fmt.Errorf("type not found: list_item")
@@ -200,7 +200,7 @@ type ListStats struct {
 		}, nil
 	}
 
-	func register_newListItemArray(
+	func register_newListItemPtrArray(
 		ctx context.Context,
 		conn RegisterConn,
 	) error {
@@ -209,7 +209,7 @@ type ListStats struct {
 			"\"_list_item\"",
 		)
 		if err != nil {
-			return fmt.Errorf("newListItemArray failed to load type: %w", err)
+			return fmt.Errorf("newListItemPtrArray failed to load type: %w", err)
 		}
 
 		conn.TypeMap().RegisterType(t)
@@ -218,15 +218,15 @@ type ListStats struct {
 	}
 
 	func init(){
-		addHook(register_newListItemArray) 
+		addHook(register_newListItemPtrArray) 
 	}
 	
 
 const outParamsSQL = `SELECT * FROM out_params();`
 
 type OutParamsRow struct {
-	Items []ListItem `json:"_items"`
-	Stats ListStats  `json:"_stats"`
+	Items []*ListItem `json:"_items"`
+	Stats *ListStats  `json:"_stats"`
 }
 
 // OutParams implements Querier.OutParams.
@@ -238,9 +238,9 @@ func (q *DBQuerier) OutParams(ctx context.Context) ([]OutParamsRow, error) {
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (OutParamsRow, error) {
-		var item OutParamsRow
-		if err := row.Scan(&item.Items, // '_items', 'Items', '[]ListItem', 'github.com/robbert229/pggen/example/function', '[]ListItem'
-			&item.Stats, // '_stats', 'Stats', 'ListStats', 'github.com/robbert229/pggen/example/function', 'ListStats'
+  var item OutParamsRow
+		if err := row.Scan(&item.Items, // '_items', 'Items', '[]*ListItem', '', '[]*ListItem'
+			&item.Stats, // '_stats', 'Stats', '*ListStats', '', '*ListStats'
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}

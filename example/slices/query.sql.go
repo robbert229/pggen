@@ -85,7 +85,7 @@ func (q *DBQuerier) GetBools(ctx context.Context, data []bool) ([]bool, error) {
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) ([]bool, error) {
-		var item []bool
+  var item []bool
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
@@ -105,7 +105,7 @@ func (q *DBQuerier) GetOneTimestamp(ctx context.Context, data *time.Time) (*time
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (*time.Time, error) {
-		var item *time.Time
+  var item *time.Time
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
@@ -126,7 +126,7 @@ func (q *DBQuerier) GetManyTimestamptzs(ctx context.Context, data []time.Time) (
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (*time.Time, error) {
-		var item *time.Time
+  var item *time.Time
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
@@ -147,7 +147,7 @@ func (q *DBQuerier) GetManyTimestamps(ctx context.Context, data []*time.Time) ([
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (*time.Time, error) {
-		var item *time.Time
+  var item *time.Time
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)

@@ -101,12 +101,12 @@ func TestQuerier_CompositeUser(t *testing.T) {
 			{
 				Mac:  mac1,
 				Type: DeviceTypeUndefined,
-				User: User{ID: &userID, Name: &name},
+				User: &User{ID: &userID, Name: &name},
 			},
 			{
 				Mac:  mac2,
 				Type: DeviceTypeUndefined,
-				User: User{ID: &userID, Name: &name},
+				User: &User{ID: &userID, Name: &name},
 			},
 		}
 		assert.Equal(t, want, users)

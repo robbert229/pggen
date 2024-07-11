@@ -96,7 +96,7 @@ func (q *DBQuerier) CreateTenant(ctx context.Context, key string, name string) (
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (CreateTenantRow, error) {
-		var item CreateTenantRow
+  var item CreateTenantRow
 		if err := row.Scan(&item.TenantID, // 'tenant_id', 'TenantID', 'int', '', 'int'
 			&item.Rname, // 'rname', 'Rname', '*string', '', '*string'
 			&item.Name, // 'name', 'Name', 'string', '', 'string'
@@ -127,7 +127,7 @@ func (q *DBQuerier) FindOrdersByCustomer(ctx context.Context, customerID int32) 
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (FindOrdersByCustomerRow, error) {
-		var item FindOrdersByCustomerRow
+  var item FindOrdersByCustomerRow
 		if err := row.Scan(&item.OrderID, // 'order_id', 'OrderID', 'int32', '', 'int32'
 			&item.OrderDate, // 'order_date', 'OrderDate', 'pgtype.Timestamptz', 'github.com/jackc/pgx/v5/pgtype', 'Timestamptz'
 			&item.OrderTotal, // 'order_total', 'OrderTotal', 'pgtype.Numeric', 'github.com/jackc/pgx/v5/pgtype', 'Numeric'
@@ -160,7 +160,7 @@ func (q *DBQuerier) FindProductsInOrder(ctx context.Context, orderID int32) ([]F
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (FindProductsInOrderRow, error) {
-		var item FindProductsInOrderRow
+  var item FindProductsInOrderRow
 		if err := row.Scan(&item.OrderID, // 'order_id', 'OrderID', '*int32', '', '*int32'
 			&item.ProductID, // 'product_id', 'ProductID', '*int32', '', '*int32'
 			&item.Name, // 'name', 'Name', '*string', '', '*string'
@@ -197,7 +197,7 @@ func (q *DBQuerier) InsertCustomer(ctx context.Context, params InsertCustomerPar
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (InsertCustomerRow, error) {
-		var item InsertCustomerRow
+  var item InsertCustomerRow
 		if err := row.Scan(&item.CustomerID, // 'customer_id', 'CustomerID', 'int32', '', 'int32'
 			&item.FirstName, // 'first_name', 'FirstName', 'string', '', 'string'
 			&item.LastName, // 'last_name', 'LastName', 'string', '', 'string'
@@ -235,7 +235,7 @@ func (q *DBQuerier) InsertOrder(ctx context.Context, params InsertOrderParams) (
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (InsertOrderRow, error) {
-		var item InsertOrderRow
+  var item InsertOrderRow
 		if err := row.Scan(&item.OrderID, // 'order_id', 'OrderID', 'int32', '', 'int32'
 			&item.OrderDate, // 'order_date', 'OrderDate', 'pgtype.Timestamptz', 'github.com/jackc/pgx/v5/pgtype', 'Timestamptz'
 			&item.OrderTotal, // 'order_total', 'OrderTotal', 'pgtype.Numeric', 'github.com/jackc/pgx/v5/pgtype', 'Numeric'

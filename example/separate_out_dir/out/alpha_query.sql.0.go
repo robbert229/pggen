@@ -168,7 +168,7 @@ func (q *DBQuerier) AlphaNested(ctx context.Context) (string, error) {
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (string, error) {
-		var item string
+  var item string
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
@@ -188,7 +188,7 @@ func (q *DBQuerier) AlphaCompositeArray(ctx context.Context) ([]Alpha, error) {
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) ([]Alpha, error) {
-		var item []Alpha
+  var item []Alpha
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)

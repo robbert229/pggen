@@ -171,6 +171,7 @@ func (tf *TypeFetcher) findCompositeTypes(ctx context.Context, uncached map[uint
 		tf.cache.addType(typ)
 		types = append(types, typ)
 	}
+
 	return types, nil
 }
 

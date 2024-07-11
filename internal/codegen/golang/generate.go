@@ -3,11 +3,12 @@ package golang
 import (
 	_ "embed"
 	"fmt"
-	"github.com/robbert229/pggen/internal/casing"
-	"github.com/robbert229/pggen/internal/codegen"
 	"path/filepath"
 	"sort"
 	"text/template"
+
+	"github.com/robbert229/pggen/internal/casing"
+	"github.com/robbert229/pggen/internal/codegen"
 )
 
 // GenerateOptions are options to control generated Go output.
@@ -26,6 +27,7 @@ type GenerateOptions struct {
 
 // Generate emits generated Go files for each of the queryFiles.
 func Generate(opts GenerateOptions, queryFiles []codegen.QueryFile) error {
+	//TODO(johnrowl) RESUME HERE
 	pkgName := opts.GoPkg
 	if pkgName == "" {
 		pkgName = filepath.Base(opts.OutputDir)

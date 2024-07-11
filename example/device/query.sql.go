@@ -176,7 +176,7 @@ func (q *DBQuerier) FindDevicesByUser(ctx context.Context, id int) ([]FindDevice
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (FindDevicesByUserRow, error) {
-		var item FindDevicesByUserRow
+  var item FindDevicesByUserRow
 		if err := row.Scan(&item.ID, // 'id', 'ID', 'int', '', 'int'
 			&item.Name, // 'name', 'Name', 'string', '', 'string'
 			&item.MacAddrs, // 'mac_addrs', 'MacAddrs', '[]net.HardwareAddr', 'net', '[]HardwareAddr'
@@ -197,7 +197,7 @@ FROM device d
 type CompositeUserRow struct {
 	Mac  net.HardwareAddr `json:"mac"`
 	Type DeviceType       `json:"type"`
-	User User             `json:"user"`
+	User *User            `json:"user"`
 }
 
 // CompositeUser implements Querier.CompositeUser.
@@ -209,10 +209,10 @@ func (q *DBQuerier) CompositeUser(ctx context.Context) ([]CompositeUserRow, erro
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (CompositeUserRow, error) {
-		var item CompositeUserRow
+  var item CompositeUserRow
 		if err := row.Scan(&item.Mac, // 'mac', 'Mac', 'net.HardwareAddr', 'net', 'HardwareAddr'
 			&item.Type, // 'type', 'Type', 'DeviceType', 'github.com/robbert229/pggen/example/device', 'DeviceType'
-			&item.User, // 'user', 'User', 'User', 'github.com/robbert229/pggen/example/device', 'User'
+			&item.User, // 'user', 'User', '*User', '', '*User'
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
@@ -231,7 +231,7 @@ func (q *DBQuerier) CompositeUserOne(ctx context.Context) (User, error) {
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (User, error) {
-		var item User
+  var item User
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
@@ -256,7 +256,7 @@ func (q *DBQuerier) CompositeUserOneTwoCols(ctx context.Context) (CompositeUserO
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (CompositeUserOneTwoColsRow, error) {
-		var item CompositeUserOneTwoColsRow
+  var item CompositeUserOneTwoColsRow
 		if err := row.Scan(&item.Num, // 'num', 'Num', 'int32', '', 'int32'
 			&item.User, // 'user', 'User', 'User', 'github.com/robbert229/pggen/example/device', 'User'
 			); err != nil {
@@ -277,7 +277,7 @@ func (q *DBQuerier) CompositeUserMany(ctx context.Context) ([]User, error) {
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (User, error) {
-		var item User
+  var item User
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)

@@ -30,7 +30,7 @@ func (q *DBQuerier) FindOrdersByPrice(ctx context.Context, minTotal pgtype.Numer
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (FindOrdersByPriceRow, error) {
-		var item FindOrdersByPriceRow
+  var item FindOrdersByPriceRow
 		if err := row.Scan(&item.OrderID, // 'order_id', 'OrderID', 'int32', '', 'int32'
 			&item.OrderDate, // 'order_date', 'OrderDate', 'pgtype.Timestamptz', 'github.com/jackc/pgx/v5/pgtype', 'Timestamptz'
 			&item.OrderTotal, // 'order_total', 'OrderTotal', 'pgtype.Numeric', 'github.com/jackc/pgx/v5/pgtype', 'Numeric'
@@ -60,7 +60,7 @@ func (q *DBQuerier) FindOrdersMRR(ctx context.Context) ([]FindOrdersMRRRow, erro
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (FindOrdersMRRRow, error) {
-		var item FindOrdersMRRRow
+  var item FindOrdersMRRRow
 		if err := row.Scan(&item.Month, // 'month', 'Month', 'pgtype.Timestamptz', 'github.com/jackc/pgx/v5/pgtype', 'Timestamptz'
 			&item.OrderMRR, // 'order_mrr', 'OrderMRR', 'pgtype.Numeric', 'github.com/jackc/pgx/v5/pgtype', 'Numeric'
 			); err != nil {

@@ -163,7 +163,7 @@ func (q *DBQuerier) VoidTwo(ctx context.Context) (string, error) {
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (string, error) {
-		var item string
+  var item string
 		if err := row.Scan(
 			&pgVoid{},
 			&item,
@@ -190,7 +190,7 @@ func (q *DBQuerier) VoidThree(ctx context.Context) (VoidThreeRow, error) {
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (VoidThreeRow, error) {
-		var item VoidThreeRow
+  var item VoidThreeRow
 		if err := row.Scan(
 			&pgVoid{},
 			&item.Foo, // 'foo', 'Foo', 'string', '', 'string'
@@ -213,7 +213,7 @@ func (q *DBQuerier) VoidThree2(ctx context.Context) ([]string, error) {
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (string, error) {
-		var item string
+  var item string
 		if err := row.Scan(&item,
 			
 			&pgVoid{},

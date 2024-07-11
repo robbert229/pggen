@@ -90,7 +90,7 @@ func (q *DBQuerier) FindServers(ctx context.Context) ([]FindServersRow, error) {
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (FindServersRow, error) {
-		var item FindServersRow
+  var item FindServersRow
 		if err := row.Scan(&item.ID, // 'id', 'ID', '*int32', '', '*int32'
 			&item.IpAddress, // 'ip_address', 'IpAddress', '*net.IPNet', '', '*IPNet'
 			&item.ExtraIpAddress, // 'extra_ip_address', 'ExtraIpAddress', '*net.IPNet', '', '*IPNet'
@@ -118,7 +118,7 @@ func (q *DBQuerier) FindServerByIP(ctx context.Context, ipAddress *net.IPNet) (F
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (FindServerByIPRow, error) {
-		var item FindServerByIPRow
+  var item FindServerByIPRow
 		if err := row.Scan(&item.ID, // 'id', 'ID', 'int32', '', 'int32'
 			&item.IpAddress, // 'ip_address', 'IpAddress', '*net.IPNet', '', '*IPNet'
 			&item.ExtraIpAddress, // 'extra_ip_address', 'ExtraIpAddress', '*net.IPNet', '', '*IPNet'
@@ -142,7 +142,7 @@ func (q *DBQuerier) InsertServer(ctx context.Context, ipAddress *net.IPNet, extr
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (int32, error) {
-		var item int32
+  var item int32
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)

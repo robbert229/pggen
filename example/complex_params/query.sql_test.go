@@ -107,7 +107,7 @@ func TestNewQuerier_ParamNested2(t *testing.T) {
 
 	want := ProductImageType{
 		Source:     "src",
-		Dimensions: Dimensions{Width: 77, Height: 77},
+		Dimensions: &Dimensions{Width: 77, Height: 77},
 	}
 
 	t.Run("ParamNested2", func(t *testing.T) {
@@ -143,8 +143,8 @@ func TestNewQuerier_ParamNested2Array(t *testing.T) {
 	ctx := context.Background()
 
 	want := []ProductImageType{
-		{Source: "src1", Dimensions: Dimensions{Width: 11, Height: 11}},
-		{Source: "src2", Dimensions: Dimensions{Width: 22, Height: 22}},
+		{Source: "src1", Dimensions: &Dimensions{Width: 11, Height: 11}},
+		{Source: "src2", Dimensions: &Dimensions{Width: 22, Height: 22}},
 	}
 
 	t.Run("ParamNested2Array", func(t *testing.T) {
@@ -181,10 +181,10 @@ func TestNewQuerier_ParamNested3(t *testing.T) {
 
 	want := ProductImageSetType{
 		Name:      "set1",
-		OrigImage: ProductImageType{Source: "src1", Dimensions: Dimensions{Width: 11, Height: 11}},
-		Images: []ProductImageType{
-			{Source: "src1", Dimensions: Dimensions{Width: 11, Height: 11}},
-			{Source: "src2", Dimensions: Dimensions{Width: 22, Height: 22}},
+		OrigImage: &ProductImageType{Source: "src1", Dimensions: &Dimensions{Width: 11, Height: 11}},
+		Images: []*ProductImageType{
+			{Source: "src1", Dimensions: &Dimensions{Width: 11, Height: 11}},
+			{Source: "src2", Dimensions: &Dimensions{Width: 22, Height: 22}},
 		},
 	}
 
@@ -223,10 +223,10 @@ func TestNewQuerier_ParamNested3_QueryAllDataTypes(t *testing.T) {
 
 	want := ProductImageSetType{
 		Name:      "set1",
-		OrigImage: ProductImageType{Source: "src1", Dimensions: Dimensions{Width: 11, Height: 11}},
-		Images: []ProductImageType{
-			{Source: "src1", Dimensions: Dimensions{Width: 11, Height: 11}},
-			{Source: "src2", Dimensions: Dimensions{Width: 22, Height: 22}},
+		OrigImage: &ProductImageType{Source: "src1", Dimensions: &Dimensions{Width: 11, Height: 11}},
+		Images: []*ProductImageType{
+			{Source: "src1", Dimensions: &Dimensions{Width: 11, Height: 11}},
+			{Source: "src2", Dimensions: &Dimensions{Width: 22, Height: 22}},
 		},
 	}
 
