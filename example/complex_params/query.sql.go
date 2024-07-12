@@ -81,15 +81,15 @@ type Dimensions struct {
 
 // ProductImageSetType represents the Postgres composite type "product_image_set_type".
 type ProductImageSetType struct {
-	Name      string             `json:"name"`
-	OrigImage ProductImageType   `json:"orig_image"`
-	Images    []ProductImageType `json:"images"`
+	Name      string              `json:"name"`
+	OrigImage *ProductImageType   `json:"orig_image"`
+	Images    []*ProductImageType `json:"images"`
 }
 
 // ProductImageType represents the Postgres composite type "product_image_type".
 type ProductImageType struct {
-	Source     string     `json:"source"`
-	Dimensions Dimensions `json:"dimensions"`
+	Source     string      `json:"source"`
+	Dimensions *Dimensions `json:"dimensions"`
 }
 
 
@@ -267,6 +267,41 @@ type ProductImageType struct {
 	
 
 
+	// codec_newProductImageTypePtrArray is a codec for the composite type of the same name
+	func codec_newProductImageTypePtrArray(conn RegisterConn) (pgtype.Codec, error) {
+		elementType, ok := conn.TypeMap().TypeForName("product_image_type")
+		if !ok {
+			return nil, fmt.Errorf("type not found: product_image_type")
+		}
+
+		return &pgtype.ArrayCodec{
+			ElementType: elementType,
+		}, nil
+	}
+
+	func register_newProductImageTypePtrArray(
+		ctx context.Context,
+		conn RegisterConn,
+	) error {
+		t, err := conn.LoadType(
+			ctx,
+			"\"_product_image_type\"",
+		)
+		if err != nil {
+			return fmt.Errorf("newProductImageTypePtrArray failed to load type: %w", err)
+		}
+
+		conn.TypeMap().RegisterType(t)
+
+		return nil
+	}
+
+	func init(){
+		addHook(register_newProductImageTypePtrArray) 
+	}
+	
+
+
 	// codec_newProductImageTypeArray is a codec for the composite type of the same name
 	func codec_newProductImageTypeArray(conn RegisterConn) (pgtype.Codec, error) {
 		elementType, ok := conn.TypeMap().TypeForName("product_image_type")
@@ -312,7 +347,7 @@ func (q *DBQuerier) ParamArrayInt(ctx context.Context, ints []int) ([]int, error
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) ([]int, error) {
-		var item []int
+  var item []int
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
@@ -332,7 +367,7 @@ func (q *DBQuerier) ParamNested1(ctx context.Context, dimensions Dimensions) (Di
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (Dimensions, error) {
-		var item Dimensions
+  var item Dimensions
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
@@ -352,7 +387,7 @@ func (q *DBQuerier) ParamNested2(ctx context.Context, image ProductImageType) (P
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (ProductImageType, error) {
-		var item ProductImageType
+  var item ProductImageType
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
@@ -372,7 +407,7 @@ func (q *DBQuerier) ParamNested2Array(ctx context.Context, images []ProductImage
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) ([]ProductImageType, error) {
-		var item []ProductImageType
+  var item []ProductImageType
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
@@ -392,7 +427,7 @@ func (q *DBQuerier) ParamNested3(ctx context.Context, imageSet ProductImageSetTy
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (ProductImageSetType, error) {
-		var item ProductImageSetType
+  var item ProductImageSetType
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)

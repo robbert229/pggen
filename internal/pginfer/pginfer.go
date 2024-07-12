@@ -201,6 +201,7 @@ func (inf *Inferrer) prepareTypes(query *ast.SourceQuery) (_a []InputParam, _ []
 			Nullable: nullables[i],
 		})
 	}
+
 	return inputParams, outputColumns, nil
 }
 

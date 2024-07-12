@@ -17,7 +17,7 @@ var _ RegisterConn = (*pgx.Conn)(nil)
 type Querier interface {
 	SearchScreenshots(ctx context.Context, params SearchScreenshotsParams) ([]SearchScreenshotsRow, error)
 
-	SearchScreenshotsOneCol(ctx context.Context, params SearchScreenshotsOneColParams) ([][]Blocks, error)
+	SearchScreenshotsOneCol(ctx context.Context, params SearchScreenshotsOneColParams) ([][]*Blocks, error)
 
 	InsertScreenshotBlocks(ctx context.Context, screenshotID int, body string) (InsertScreenshotBlocksRow, error)
 
@@ -289,8 +289,8 @@ type UserEmail struct {
 	
 
 
-	// codec_newBlocksArray is a codec for the composite type of the same name
-	func codec_newBlocksArray(conn RegisterConn) (pgtype.Codec, error) {
+	// codec_newBlocksPtrArray is a codec for the composite type of the same name
+	func codec_newBlocksPtrArray(conn RegisterConn) (pgtype.Codec, error) {
 		elementType, ok := conn.TypeMap().TypeForName("blocks")
 		if !ok {
 			return nil, fmt.Errorf("type not found: blocks")
@@ -301,7 +301,7 @@ type UserEmail struct {
 		}, nil
 	}
 
-	func register_newBlocksArray(
+	func register_newBlocksPtrArray(
 		ctx context.Context,
 		conn RegisterConn,
 	) error {
@@ -310,7 +310,7 @@ type UserEmail struct {
 			"\"_blocks\"",
 		)
 		if err != nil {
-			return fmt.Errorf("newBlocksArray failed to load type: %w", err)
+			return fmt.Errorf("newBlocksPtrArray failed to load type: %w", err)
 		}
 
 		conn.TypeMap().RegisterType(t)
@@ -319,7 +319,7 @@ type UserEmail struct {
 	}
 
 	func init(){
-		addHook(register_newBlocksArray) 
+		addHook(register_newBlocksPtrArray) 
 	}
 	
 
@@ -340,8 +340,8 @@ type SearchScreenshotsParams struct {
 }
 
 type SearchScreenshotsRow struct {
-	ID     int      `json:"id"`
-	Blocks []Blocks `json:"blocks"`
+	ID     int       `json:"id"`
+	Blocks []*Blocks `json:"blocks"`
 }
 
 // SearchScreenshots implements Querier.SearchScreenshots.
@@ -353,9 +353,9 @@ func (q *DBQuerier) SearchScreenshots(ctx context.Context, params SearchScreensh
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (SearchScreenshotsRow, error) {
-		var item SearchScreenshotsRow
+  var item SearchScreenshotsRow
 		if err := row.Scan(&item.ID, // 'id', 'ID', 'int', '', 'int'
-			&item.Blocks, // 'blocks', 'Blocks', '[]Blocks', 'github.com/robbert229/pggen/example/citext', '[]Blocks'
+			&item.Blocks, // 'blocks', 'Blocks', '[]*Blocks', '', '[]*Blocks'
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
 		}
@@ -379,15 +379,15 @@ type SearchScreenshotsOneColParams struct {
 }
 
 // SearchScreenshotsOneCol implements Querier.SearchScreenshotsOneCol.
-func (q *DBQuerier) SearchScreenshotsOneCol(ctx context.Context, params SearchScreenshotsOneColParams) ([][]Blocks, error) {
+func (q *DBQuerier) SearchScreenshotsOneCol(ctx context.Context, params SearchScreenshotsOneColParams) ([][]*Blocks, error) {
 	ctx = context.WithValue(ctx, "pggen_query_name", "SearchScreenshotsOneCol")
 	rows, err := q.conn.Query(ctx, searchScreenshotsOneColSQL, params.Body, params.Limit, params.Offset)
 	if err != nil {
 		return nil, fmt.Errorf("query SearchScreenshotsOneCol: %w", err)
 	}
 
-	return pgx.CollectRows(rows, func(row pgx.CollectableRow) ([]Blocks, error) {
-		var item []Blocks
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) ([]*Blocks, error) {
+  var item []*Blocks
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
@@ -420,7 +420,7 @@ func (q *DBQuerier) InsertScreenshotBlocks(ctx context.Context, screenshotID int
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (InsertScreenshotBlocksRow, error) {
-		var item InsertScreenshotBlocksRow
+  var item InsertScreenshotBlocksRow
 		if err := row.Scan(&item.ID, // 'id', 'ID', 'int', '', 'int'
 			&item.ScreenshotID, // 'screenshot_id', 'ScreenshotID', 'int', '', 'int'
 			&item.Body, // 'body', 'Body', 'string', '', 'string'
@@ -442,7 +442,7 @@ func (q *DBQuerier) ArraysInput(ctx context.Context, arrays Arrays) (Arrays, err
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (Arrays, error) {
-		var item Arrays
+  var item Arrays
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
@@ -462,7 +462,7 @@ func (q *DBQuerier) UserEmails(ctx context.Context) (UserEmail, error) {
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (UserEmail, error) {
-		var item UserEmail
+  var item UserEmail
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)

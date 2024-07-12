@@ -147,7 +147,7 @@ func (q *DBQuerier) FindEnumTypes(ctx context.Context, oids []uint32) ([]FindEnu
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (FindEnumTypesRow, error) {
-		var item FindEnumTypesRow
+  var item FindEnumTypesRow
 		if err := row.Scan(&item.OID, // 'oid', 'OID', 'uint32', '', 'uint32'
 			&item.TypeName, // 'type_name', 'TypeName', 'string', '', 'string'
 			&item.ChildOIDs, // 'child_oids', 'ChildOIDs', '[]int', '', '[]int'
@@ -207,7 +207,7 @@ func (q *DBQuerier) FindArrayTypes(ctx context.Context, oids []uint32) ([]FindAr
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (FindArrayTypesRow, error) {
-		var item FindArrayTypesRow
+  var item FindArrayTypesRow
 		if err := row.Scan(&item.OID, // 'oid', 'OID', 'uint32', '', 'uint32'
 			&item.TypeName, // 'type_name', 'TypeName', 'string', '', 'string'
 			&item.ElemOID, // 'elem_oid', 'ElemOID', 'uint32', '', 'uint32'
@@ -269,7 +269,7 @@ func (q *DBQuerier) FindCompositeTypes(ctx context.Context, oids []uint32) ([]Fi
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (FindCompositeTypesRow, error) {
-		var item FindCompositeTypesRow
+  var item FindCompositeTypesRow
 		if err := row.Scan(&item.TableTypeName, // 'table_type_name', 'TableTypeName', 'string', '', 'string'
 			&item.TableTypeOID, // 'table_type_oid', 'TableTypeOID', 'uint32', '', 'uint32'
 			&item.TableName, // 'table_name', 'TableName', 'string', '', 'string'
@@ -322,7 +322,7 @@ func (q *DBQuerier) FindDescendantOIDs(ctx context.Context, oids []uint32) ([]ui
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (uint32, error) {
-		var item uint32
+  var item uint32
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
@@ -346,7 +346,7 @@ func (q *DBQuerier) FindOIDByName(ctx context.Context, name string) (uint32, err
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (uint32, error) {
-		var item uint32
+  var item uint32
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
@@ -368,7 +368,7 @@ func (q *DBQuerier) FindOIDName(ctx context.Context, oid uint32) (string, error)
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (string, error) {
-		var item string
+  var item string
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
@@ -396,7 +396,7 @@ func (q *DBQuerier) FindOIDNames(ctx context.Context, oid []uint32) ([]FindOIDNa
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (FindOIDNamesRow, error) {
-		var item FindOIDNamesRow
+  var item FindOIDNamesRow
 		if err := row.Scan(&item.OID, // 'oid', 'OID', 'uint32', '', 'uint32'
 			&item.Name, // 'name', 'Name', 'string', '', 'string'
 			&item.Kind, // 'kind', 'Kind', 'byte', '', 'byte'

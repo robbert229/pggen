@@ -43,7 +43,7 @@ func TestNewQuerier_SearchScreenshots(t *testing.T) {
 	want := []SearchScreenshotsRow{
 		{
 			ID: screenshotID,
-			Blocks: []Blocks{
+			Blocks: []*Blocks{
 				{
 					ID:           screenshot1.ID,
 					ScreenshotID: screenshotID,
@@ -75,7 +75,7 @@ func TestNewQuerier_SearchScreenshots(t *testing.T) {
 			Offset: 0,
 		})
 		require.NoError(t, err)
-		assert.Equal(t, [][]Blocks{want[0].Blocks}, rows)
+		assert.Equal(t, [][]*Blocks{want[0].Blocks}, rows)
 	})
 }
 

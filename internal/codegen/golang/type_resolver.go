@@ -2,11 +2,13 @@ package golang
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+
+	"github.com/davecgh/go-spew/spew"
 	"github.com/robbert229/pggen/internal/casing"
 	"github.com/robbert229/pggen/internal/codegen/golang/gotype"
 	"github.com/robbert229/pggen/internal/pg"
-	"strconv"
-	"strings"
 )
 
 // TypeResolver handles the mapping between Postgres and Go types.
@@ -44,6 +46,7 @@ func (tr TypeResolver) Resolve(pgt pg.Type, nullable bool, pkgPath string) (goty
 	} else {
 		typ, isKnownType = gotype.FindKnownTypeNonNullable(pgt.OID())
 	}
+
 	if isKnownType {
 		switch typ := typ.(type) {
 		case *gotype.ArrayType:
@@ -87,13 +90,15 @@ func (tr TypeResolver) Resolve(pgt pg.Type, nullable bool, pkgPath string) (goty
 		enum := gotype.NewEnumType(pkgPath, pgt, tr.caser)
 		return enum, nil
 	case pg.CompositeType:
-		comp, err := CreateCompositeType(pkgPath, pgt, tr, tr.caser)
+		// TODO(johnrowl) this is where the author composite type is created
+		comp, err := CreateCompositeType(pkgPath, pgt, tr, tr.caser, nullable)
 		if err != nil {
 			return nil, fmt.Errorf("create composite type: %w", err)
 		}
+
 		return comp, nil
 	}
-
+	spew.Dump("TERMINAL")
 	return nil, fmt.Errorf("no go type found for Postgres type %s oid=%d", pgt.String(), pgt.OID())
 }
 
@@ -104,6 +109,7 @@ func CreateCompositeType(
 	pgt pg.CompositeType,
 	resolver TypeResolver,
 	caser casing.Caser,
+	nullable bool,
 ) (gotype.Type, error) {
 	name := caser.ToUpperGoIdent(pgt.Name)
 	if name == "" {
@@ -123,15 +129,23 @@ func CreateCompositeType(
 		}
 		fieldTypes[i] = fieldType
 	}
-	ct := &gotype.CompositeType{
+
+	var ct gotype.Type = &gotype.CompositeType{
 		PgComposite: pgt,
 		Name:        name,
 		FieldNames:  fieldNames,
 		FieldTypes:  fieldTypes,
 	}
 	if pkgPath != "" {
-		return &gotype.ImportType{PkgPath: pkgPath, Type: ct}, nil
+		ct = &gotype.ImportType{PkgPath: pkgPath, Type: ct}
 	}
+
+	if nullable {
+		ct = &gotype.PointerType{
+			Elem: ct,
+		}
+	}
+
 	return ct, nil
 }
 

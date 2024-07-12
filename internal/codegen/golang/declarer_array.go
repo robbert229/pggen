@@ -11,6 +11,10 @@ import (
 // ArrayRegisterFunc returns the function name that registers the array in the
 // typemap.
 func ArrayRegisterFunc(typ *gotype.ArrayType) string {
+	if ptr, ok := typ.Elem.(*gotype.PointerType); ok {
+		return "new" + ptr.Elem.BaseName() + "PtrArray"
+	}
+
 	return "new" + typ.Elem.BaseName() + "Array"
 }
 
@@ -31,7 +35,6 @@ func (a ArrayTranscoderDeclarer) DedupeKey() string {
 func (a ArrayTranscoderDeclarer) Declare(string) (string, error) {
 	sb := &strings.Builder{}
 	funcName := ArrayRegisterFunc(a.typ)
-
 	t := template.New("declarer")
 	t = template.Must(t.Parse(`
 	// codec_{{ .FuncName }} is a codec for the composite type of the same name

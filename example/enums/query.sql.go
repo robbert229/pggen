@@ -246,7 +246,7 @@ func (q *DBQuerier) FindAllDevices(ctx context.Context) ([]FindAllDevicesRow, er
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (FindAllDevicesRow, error) {
-		var item FindAllDevicesRow
+  var item FindAllDevicesRow
 		if err := row.Scan(&item.Mac, // 'mac', 'Mac', 'net.HardwareAddr', 'net', 'HardwareAddr'
 			&item.Type, // 'type', 'Type', 'DeviceType', 'github.com/robbert229/pggen/example/enums', 'DeviceType'
 			); err != nil {
@@ -280,7 +280,7 @@ func (q *DBQuerier) FindOneDeviceArray(ctx context.Context) ([]DeviceType, error
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) ([]DeviceType, error) {
-		var item []DeviceType
+  var item []DeviceType
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
@@ -302,7 +302,7 @@ func (q *DBQuerier) FindManyDeviceArray(ctx context.Context) ([][]DeviceType, er
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) ([]DeviceType, error) {
-		var item []DeviceType
+  var item []DeviceType
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)
@@ -329,7 +329,7 @@ func (q *DBQuerier) FindManyDeviceArrayWithNum(ctx context.Context) ([]FindManyD
 	}
 
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (FindManyDeviceArrayWithNumRow, error) {
-		var item FindManyDeviceArrayWithNumRow
+  var item FindManyDeviceArrayWithNumRow
 		if err := row.Scan(&item.Num, // 'num', 'Num', '*int32', '', '*int32'
 			&item.DeviceTypes, // 'device_types', 'DeviceTypes', '[]DeviceType', 'github.com/robbert229/pggen/example/enums', '[]DeviceType'
 			); err != nil {
@@ -350,7 +350,7 @@ func (q *DBQuerier) EnumInsideComposite(ctx context.Context) (Device, error) {
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (Device, error) {
-		var item Device
+  var item Device
 		if err := row.Scan(&item,
 			); err != nil {
 			return item, fmt.Errorf("failed to scan: %w", err)

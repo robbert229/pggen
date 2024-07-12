@@ -97,7 +97,7 @@ func (q *DBQuerier) FindUser(ctx context.Context, email string) (FindUserRow, er
 	}
 
 	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (FindUserRow, error) {
-		var item FindUserRow
+  var item FindUserRow
 		if err := row.Scan(&item.Email, // 'email', 'Email', 'string', '', 'string'
 			&item.Pass, // 'pass', 'Pass', 'string', '', 'string'
 			); err != nil {

@@ -1,6 +1,8 @@
 package golang
 
 import (
+	"testing"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/robbert229/pggen/internal/casing"
@@ -8,7 +10,6 @@ import (
 	"github.com/robbert229/pggen/internal/difftest"
 	"github.com/robbert229/pggen/internal/pg"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestTypeResolver_Resolve(t *testing.T) {
@@ -148,19 +149,21 @@ func TestTypeResolver_Resolve(t *testing.T) {
 				ColumnTypes: []pg.Type{pg.Text, pg.Int8},
 			},
 			nullable: true,
-			want: &gotype.ImportType{
-				PkgPath: testPkgPath,
-				Type: &gotype.CompositeType{
-					PgComposite: pg.CompositeType{
-						Name:        "qux",
-						ColumnNames: []string{"id", "foo"},
-						ColumnTypes: []pg.Type{pg.Text, pg.Int8},
-					},
-					Name:       "Qux",
-					FieldNames: []string{"ID", "Foo"},
-					FieldTypes: []gotype.Type{
-						&gotype.PointerType{Elem: &gotype.OpaqueType{Name: "string", PgType: pg.Text}},
-						&gotype.PointerType{Elem: &gotype.OpaqueType{Name: "int", PgType: pg.Int8}},
+			want: &gotype.PointerType{
+				Elem: &gotype.ImportType{
+					PkgPath: testPkgPath,
+					Type: &gotype.CompositeType{
+						PgComposite: pg.CompositeType{
+							Name:        "qux",
+							ColumnNames: []string{"id", "foo"},
+							ColumnTypes: []pg.Type{pg.Text, pg.Int8},
+						},
+						Name:       "Qux",
+						FieldNames: []string{"ID", "Foo"},
+						FieldTypes: []gotype.Type{
+							&gotype.PointerType{Elem: &gotype.OpaqueType{Name: "string", PgType: pg.Text}},
+							&gotype.PointerType{Elem: &gotype.OpaqueType{Name: "int", PgType: pg.Int8}},
+						},
 					},
 				},
 			},
@@ -233,9 +236,10 @@ func TestCreateCompositeType(t *testing.T) {
 	caser := casing.NewCaser()
 	resolver := NewTypeResolver(caser, nil)
 	tests := []struct {
-		pkgPath string
-		pgType  pg.CompositeType
-		want    gotype.Type
+		pkgPath  string
+		pgType   pg.CompositeType
+		nullable bool
+		want     gotype.Type
 	}{
 		{
 			pkgPath: "example.com/foo",
@@ -264,7 +268,7 @@ func TestCreateCompositeType(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.pkgPath+" "+tt.pgType.Name, func(t *testing.T) {
-			got, err := CreateCompositeType(tt.pkgPath, tt.pgType, resolver, caser)
+			got, err := CreateCompositeType(tt.pkgPath, tt.pgType, resolver, caser, tt.nullable)
 			assert.NoError(t, err)
 			difftest.AssertSame(t, tt.want, got)
 		})
