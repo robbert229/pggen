@@ -117,7 +117,7 @@ func (q *DBQuerier) FindServerByIP(ctx context.Context, ipAddress *net.IPNet) (F
 		return FindServerByIPRow{}, fmt.Errorf("query FindServerByIP: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (FindServerByIPRow, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (FindServerByIPRow, error) {
   var item FindServerByIPRow
 		if err := row.Scan(&item.ID, // 'id', 'ID', 'int32', '', 'int32'
 			&item.IpAddress, // 'ip_address', 'IpAddress', '*net.IPNet', '', '*IPNet'
@@ -141,7 +141,7 @@ func (q *DBQuerier) InsertServer(ctx context.Context, ipAddress *net.IPNet, extr
 		return 0, fmt.Errorf("query InsertServer: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (int32, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (int32, error) {
   var item int32
 		if err := row.Scan(&item,
 			); err != nil {

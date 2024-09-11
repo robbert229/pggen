@@ -85,7 +85,7 @@ func (q *DBQuerier) CustomTypes(ctx context.Context) (CustomTypesRow, error) {
 		return CustomTypesRow{}, fmt.Errorf("query CustomTypes: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (CustomTypesRow, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (CustomTypesRow, error) {
   var item CustomTypesRow
 		if err := row.Scan(&item.Column, // '?column?', 'Column', 'mytype.String', 'github.com/robbert229/pggen/example/custom_types/mytype', 'String'
 			&item.Int8, // 'int8', 'Int8', 'CustomInt', 'github.com/robbert229/pggen/example/custom_types', 'CustomInt'
@@ -106,7 +106,7 @@ func (q *DBQuerier) CustomMyInt(ctx context.Context) (int, error) {
 		return 0, fmt.Errorf("query CustomMyInt: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (int, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (int, error) {
   var item int
 		if err := row.Scan(&item,
 			); err != nil {

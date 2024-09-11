@@ -279,7 +279,7 @@ func (q *DBQuerier) FindOneDeviceArray(ctx context.Context) ([]DeviceType, error
 		return nil, fmt.Errorf("query FindOneDeviceArray: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) ([]DeviceType, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) ([]DeviceType, error) {
   var item []DeviceType
 		if err := row.Scan(&item,
 			); err != nil {
@@ -349,7 +349,7 @@ func (q *DBQuerier) EnumInsideComposite(ctx context.Context) (Device, error) {
 		return Device{}, fmt.Errorf("query EnumInsideComposite: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (Device, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (Device, error) {
   var item Device
 		if err := row.Scan(&item,
 			); err != nil {

@@ -107,7 +107,7 @@ func (q *DBQuerier) FindTopScienceChildrenAgg(ctx context.Context) ([]pgtype.Tex
 		return nil, fmt.Errorf("query FindTopScienceChildrenAgg: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) ([]pgtype.Text, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) ([]pgtype.Text, error) {
   var item []pgtype.Text
 		if err := row.Scan(&item,
 			); err != nil {
@@ -166,7 +166,7 @@ func (q *DBQuerier) FindLtreeInput(ctx context.Context, inLtree pgtype.Text, inL
 		return FindLtreeInputRow{}, fmt.Errorf("query FindLtreeInput: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (FindLtreeInputRow, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (FindLtreeInputRow, error) {
   var item FindLtreeInputRow
 		if err := row.Scan(&item.Ltree, // 'ltree', 'Ltree', 'pgtype.Text', 'github.com/jackc/pgx/v5/pgtype', 'Text'
 			&item.TextArr, // 'text_arr', 'TextArr', '[]pgtype.Text', 'github.com/jackc/pgx/v5/pgtype', '[]Text'

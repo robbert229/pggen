@@ -344,7 +344,7 @@ func (q *DBQuerier) ArrayNested2(ctx context.Context) ([]ProductImageType, error
 		return nil, fmt.Errorf("query ArrayNested2: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) ([]ProductImageType, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) ([]ProductImageType, error) {
   var item []ProductImageType
 		if err := row.Scan(&item,
 			); err != nil {

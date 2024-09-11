@@ -95,7 +95,7 @@ func (q *DBQuerier) CreateTenant(ctx context.Context, key string, name string) (
 		return CreateTenantRow{}, fmt.Errorf("query CreateTenant: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (CreateTenantRow, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (CreateTenantRow, error) {
   var item CreateTenantRow
 		if err := row.Scan(&item.TenantID, // 'tenant_id', 'TenantID', 'int', '', 'int'
 			&item.Rname, // 'rname', 'Rname', '*string', '', '*string'
@@ -196,7 +196,7 @@ func (q *DBQuerier) InsertCustomer(ctx context.Context, params InsertCustomerPar
 		return InsertCustomerRow{}, fmt.Errorf("query InsertCustomer: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (InsertCustomerRow, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (InsertCustomerRow, error) {
   var item InsertCustomerRow
 		if err := row.Scan(&item.CustomerID, // 'customer_id', 'CustomerID', 'int32', '', 'int32'
 			&item.FirstName, // 'first_name', 'FirstName', 'string', '', 'string'
@@ -234,7 +234,7 @@ func (q *DBQuerier) InsertOrder(ctx context.Context, params InsertOrderParams) (
 		return InsertOrderRow{}, fmt.Errorf("query InsertOrder: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (InsertOrderRow, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (InsertOrderRow, error) {
   var item InsertOrderRow
 		if err := row.Scan(&item.OrderID, // 'order_id', 'OrderID', 'int32', '', 'int32'
 			&item.OrderDate, // 'order_date', 'OrderDate', 'pgtype.Timestamptz', 'github.com/jackc/pgx/v5/pgtype', 'Timestamptz'

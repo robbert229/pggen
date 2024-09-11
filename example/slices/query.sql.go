@@ -84,7 +84,7 @@ func (q *DBQuerier) GetBools(ctx context.Context, data []bool) ([]bool, error) {
 		return nil, fmt.Errorf("query GetBools: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) ([]bool, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) ([]bool, error) {
   var item []bool
 		if err := row.Scan(&item,
 			); err != nil {
@@ -104,7 +104,7 @@ func (q *DBQuerier) GetOneTimestamp(ctx context.Context, data *time.Time) (*time
 		return nil, fmt.Errorf("query GetOneTimestamp: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (*time.Time, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (*time.Time, error) {
   var item *time.Time
 		if err := row.Scan(&item,
 			); err != nil {

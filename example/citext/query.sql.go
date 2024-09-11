@@ -419,7 +419,7 @@ func (q *DBQuerier) InsertScreenshotBlocks(ctx context.Context, screenshotID int
 		return InsertScreenshotBlocksRow{}, fmt.Errorf("query InsertScreenshotBlocks: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (InsertScreenshotBlocksRow, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (InsertScreenshotBlocksRow, error) {
   var item InsertScreenshotBlocksRow
 		if err := row.Scan(&item.ID, // 'id', 'ID', 'int', '', 'int'
 			&item.ScreenshotID, // 'screenshot_id', 'ScreenshotID', 'int', '', 'int'
@@ -441,7 +441,7 @@ func (q *DBQuerier) ArraysInput(ctx context.Context, arrays Arrays) (Arrays, err
 		return Arrays{}, fmt.Errorf("query ArraysInput: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (Arrays, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (Arrays, error) {
   var item Arrays
 		if err := row.Scan(&item,
 			); err != nil {
@@ -461,7 +461,7 @@ func (q *DBQuerier) UserEmails(ctx context.Context) (UserEmail, error) {
 		return UserEmail{}, fmt.Errorf("query UserEmails: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (UserEmail, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (UserEmail, error) {
   var item UserEmail
 		if err := row.Scan(&item,
 			); err != nil {

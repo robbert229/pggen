@@ -112,7 +112,7 @@ func (q *DBQuerier) FindAuthorByID(ctx context.Context, authorID int32) (FindAut
 		return FindAuthorByIDRow{}, fmt.Errorf("query FindAuthorByID: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (FindAuthorByIDRow, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (FindAuthorByIDRow, error) {
   var item FindAuthorByIDRow
 		if err := row.Scan(&item.AuthorID, // 'author_id', 'AuthorID', 'int32', '', 'int32'
 			&item.FirstName, // 'first_name', 'FirstName', 'string', '', 'string'
@@ -259,7 +259,7 @@ func (q *DBQuerier) InsertAuthor(ctx context.Context, firstName string, lastName
 		return 0, fmt.Errorf("query InsertAuthor: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (int32, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (int32, error) {
   var item int32
 		if err := row.Scan(&item,
 			); err != nil {
@@ -294,7 +294,7 @@ func (q *DBQuerier) InsertAuthorSuffix(ctx context.Context, params InsertAuthorS
 		return InsertAuthorSuffixRow{}, fmt.Errorf("query InsertAuthorSuffix: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (InsertAuthorSuffixRow, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (InsertAuthorSuffixRow, error) {
   var item InsertAuthorSuffixRow
 		if err := row.Scan(&item.AuthorID, // 'author_id', 'AuthorID', 'int32', '', 'int32'
 			&item.FirstName, // 'first_name', 'FirstName', 'string', '', 'string'
@@ -317,7 +317,7 @@ func (q *DBQuerier) StringAggFirstName(ctx context.Context, authorID int32) (*st
 		return nil, fmt.Errorf("query StringAggFirstName: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (*string, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (*string, error) {
   var item *string
 		if err := row.Scan(&item,
 			); err != nil {
@@ -337,7 +337,7 @@ func (q *DBQuerier) ArrayAggFirstName(ctx context.Context, authorID int32) ([]st
 		return nil, fmt.Errorf("query ArrayAggFirstName: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) ([]string, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) ([]string, error) {
   var item []string
 		if err := row.Scan(&item,
 			); err != nil {

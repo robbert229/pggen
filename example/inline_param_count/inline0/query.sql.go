@@ -85,7 +85,7 @@ func (q *DBQuerier) CountAuthors(ctx context.Context) (*int, error) {
 		return nil, fmt.Errorf("query CountAuthors: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (*int, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (*int, error) {
   var item *int
 		if err := row.Scan(&item,
 			); err != nil {
@@ -116,7 +116,7 @@ func (q *DBQuerier) FindAuthorByID(ctx context.Context, params FindAuthorByIDPar
 		return FindAuthorByIDRow{}, fmt.Errorf("query FindAuthorByID: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (FindAuthorByIDRow, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (FindAuthorByIDRow, error) {
   var item FindAuthorByIDRow
 		if err := row.Scan(&item.AuthorID, // 'author_id', 'AuthorID', 'int32', '', 'int32'
 			&item.FirstName, // 'first_name', 'FirstName', 'string', '', 'string'
@@ -146,7 +146,7 @@ func (q *DBQuerier) InsertAuthor(ctx context.Context, params InsertAuthorParams)
 		return 0, fmt.Errorf("query InsertAuthor: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (int32, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (int32, error) {
   var item int32
 		if err := row.Scan(&item,
 			); err != nil {

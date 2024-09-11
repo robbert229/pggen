@@ -87,7 +87,7 @@ func (q *DBQuerier) GenSeries1(ctx context.Context) (*int, error) {
 		return nil, fmt.Errorf("query GenSeries1: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (*int, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (*int, error) {
   var item *int
 		if err := row.Scan(&item,
 			); err != nil {
@@ -129,7 +129,7 @@ func (q *DBQuerier) GenSeriesArr1(ctx context.Context) ([]int, error) {
 		return nil, fmt.Errorf("query GenSeriesArr1: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) ([]int, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) ([]int, error) {
   var item []int
 		if err := row.Scan(&item,
 			); err != nil {
@@ -172,7 +172,7 @@ func (q *DBQuerier) GenSeriesStr1(ctx context.Context) (*string, error) {
 		return nil, fmt.Errorf("query GenSeriesStr1: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (*string, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (*string, error) {
   var item *string
 		if err := row.Scan(&item,
 			); err != nil {

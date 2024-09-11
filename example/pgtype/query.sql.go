@@ -90,7 +90,7 @@ func (q *DBQuerier) FindAuthorByID(ctx context.Context, authorID pgtype.Int4) (F
 		return FindAuthorByIDRow{}, fmt.Errorf("query FindAuthorByID: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (FindAuthorByIDRow, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (FindAuthorByIDRow, error) {
   var item FindAuthorByIDRow
 		if err := row.Scan(&item.AuthorID, // 'author_id', 'AuthorID', 'pgtype.Int4', 'github.com/jackc/pgx/v5/pgtype', 'Int4'
 			&item.FirstName, // 'first_name', 'FirstName', 'pgtype.Text', 'github.com/jackc/pgx/v5/pgtype', 'Text'
@@ -115,7 +115,7 @@ func (q *DBQuerier) InsertAuthor(ctx context.Context, firstName pgtype.Text, las
 		return pgtype.Int4{}, fmt.Errorf("query InsertAuthor: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (pgtype.Int4, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (pgtype.Int4, error) {
   var item pgtype.Int4
 		if err := row.Scan(&item,
 			); err != nil {
@@ -135,7 +135,7 @@ func (q *DBQuerier) SelectInt8(ctx context.Context) (pgtype.Int8, error) {
 		return pgtype.Int8{}, fmt.Errorf("query SelectInt8: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (pgtype.Int8, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (pgtype.Int8, error) {
   var item pgtype.Int8
 		if err := row.Scan(&item,
 			); err != nil {
@@ -155,7 +155,7 @@ func (q *DBQuerier) SelectInt4(ctx context.Context) (pgtype.Int4, error) {
 		return pgtype.Int4{}, fmt.Errorf("query SelectInt4: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (pgtype.Int4, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (pgtype.Int4, error) {
   var item pgtype.Int4
 		if err := row.Scan(&item,
 			); err != nil {

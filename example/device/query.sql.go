@@ -230,7 +230,7 @@ func (q *DBQuerier) CompositeUserOne(ctx context.Context) (User, error) {
 		return User{}, fmt.Errorf("query CompositeUserOne: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (User, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (User, error) {
   var item User
 		if err := row.Scan(&item,
 			); err != nil {
@@ -255,7 +255,7 @@ func (q *DBQuerier) CompositeUserOneTwoCols(ctx context.Context) (CompositeUserO
 		return CompositeUserOneTwoColsRow{}, fmt.Errorf("query CompositeUserOneTwoCols: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (CompositeUserOneTwoColsRow, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (CompositeUserOneTwoColsRow, error) {
   var item CompositeUserOneTwoColsRow
 		if err := row.Scan(&item.Num, // 'num', 'Num', 'int32', '', 'int32'
 			&item.User, // 'user', 'User', 'User', 'github.com/robbert229/pggen/example/device', 'User'

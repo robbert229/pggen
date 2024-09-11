@@ -346,7 +346,7 @@ func (q *DBQuerier) ParamArrayInt(ctx context.Context, ints []int) ([]int, error
 		return nil, fmt.Errorf("query ParamArrayInt: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) ([]int, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) ([]int, error) {
   var item []int
 		if err := row.Scan(&item,
 			); err != nil {
@@ -366,7 +366,7 @@ func (q *DBQuerier) ParamNested1(ctx context.Context, dimensions Dimensions) (Di
 		return Dimensions{}, fmt.Errorf("query ParamNested1: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (Dimensions, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (Dimensions, error) {
   var item Dimensions
 		if err := row.Scan(&item,
 			); err != nil {
@@ -386,7 +386,7 @@ func (q *DBQuerier) ParamNested2(ctx context.Context, image ProductImageType) (P
 		return ProductImageType{}, fmt.Errorf("query ParamNested2: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (ProductImageType, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (ProductImageType, error) {
   var item ProductImageType
 		if err := row.Scan(&item,
 			); err != nil {
@@ -406,7 +406,7 @@ func (q *DBQuerier) ParamNested2Array(ctx context.Context, images []ProductImage
 		return nil, fmt.Errorf("query ParamNested2Array: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) ([]ProductImageType, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) ([]ProductImageType, error) {
   var item []ProductImageType
 		if err := row.Scan(&item,
 			); err != nil {
@@ -426,7 +426,7 @@ func (q *DBQuerier) ParamNested3(ctx context.Context, imageSet ProductImageSetTy
 		return ProductImageSetType{}, fmt.Errorf("query ParamNested3: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (ProductImageSetType, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (ProductImageSetType, error) {
   var item ProductImageSetType
 		if err := row.Scan(&item,
 			); err != nil {

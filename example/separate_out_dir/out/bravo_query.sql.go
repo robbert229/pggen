@@ -21,7 +21,7 @@ func (q *DBQuerier) Bravo(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("query Bravo: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (string, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (string, error) {
   var item string
 		if err := row.Scan(&item,
 			); err != nil {

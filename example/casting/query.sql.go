@@ -269,7 +269,7 @@ func (q *DBQuerier) InsertAuthor(ctx context.Context, firstName string, lastName
 		return 0, fmt.Errorf("query InsertAuthor: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (int32, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (int32, error) {
   var item int32
 		if err := row.Scan(&item,
 			); err != nil {
@@ -291,7 +291,7 @@ func (q *DBQuerier) InsertBook(ctx context.Context, title string) (int32, error)
 		return 0, fmt.Errorf("query InsertBook: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (int32, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (int32, error) {
   var item int32
 		if err := row.Scan(&item,
 			); err != nil {

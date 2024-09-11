@@ -111,7 +111,7 @@ func (q *DBQuerier) Backtick(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("query Backtick: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (string, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (string, error) {
   var item string
 		if err := row.Scan(&item,
 			); err != nil {
@@ -131,7 +131,7 @@ func (q *DBQuerier) BacktickQuoteBacktick(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("query BacktickQuoteBacktick: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (string, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (string, error) {
   var item string
 		if err := row.Scan(&item,
 			); err != nil {
@@ -151,7 +151,7 @@ func (q *DBQuerier) BacktickNewline(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("query BacktickNewline: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (string, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (string, error) {
   var item string
 		if err := row.Scan(&item,
 			); err != nil {
@@ -171,7 +171,7 @@ func (q *DBQuerier) BacktickDoubleQuote(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("query BacktickDoubleQuote: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (string, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (string, error) {
   var item string
 		if err := row.Scan(&item,
 			); err != nil {
@@ -191,7 +191,7 @@ func (q *DBQuerier) BacktickBackslashN(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("query BacktickBackslashN: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (string, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (string, error) {
   var item string
 		if err := row.Scan(&item,
 			); err != nil {
@@ -216,7 +216,7 @@ func (q *DBQuerier) IllegalNameSymbols(ctx context.Context, helloWorld string) (
 		return IllegalNameSymbolsRow{}, fmt.Errorf("query IllegalNameSymbols: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (IllegalNameSymbolsRow, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (IllegalNameSymbolsRow, error) {
   var item IllegalNameSymbolsRow
 		if err := row.Scan(&item.UnnamedColumn0, // '$', 'UnnamedColumn0', 'string', '', 'string'
 			&item.FooBar, // 'foo.bar!@#$%&*()"--+', 'FooBar', 'string', '', 'string'
@@ -237,7 +237,7 @@ func (q *DBQuerier) SpaceAfter(ctx context.Context, space string) (string, error
 		return "", fmt.Errorf("query SpaceAfter: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (string, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (string, error) {
   var item string
 		if err := row.Scan(&item,
 			); err != nil {
@@ -257,7 +257,7 @@ func (q *DBQuerier) BadEnumName(ctx context.Context) (UnnamedEnum123, error) {
 		return UnnamedEnum123(""), fmt.Errorf("query BadEnumName: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (UnnamedEnum123, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (UnnamedEnum123, error) {
   var item UnnamedEnum123
 		if err := row.Scan(&item,
 			); err != nil {
@@ -277,7 +277,7 @@ func (q *DBQuerier) GoKeyword(ctx context.Context, go_ string) (string, error) {
 		return "", fmt.Errorf("query GoKeyword: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (string, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (string, error) {
   var item string
 		if err := row.Scan(&item,
 			); err != nil {

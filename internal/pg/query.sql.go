@@ -345,7 +345,7 @@ func (q *DBQuerier) FindOIDByName(ctx context.Context, name string) (uint32, err
 		return 0, fmt.Errorf("query FindOIDByName: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (uint32, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (uint32, error) {
   var item uint32
 		if err := row.Scan(&item,
 			); err != nil {
@@ -367,7 +367,7 @@ func (q *DBQuerier) FindOIDName(ctx context.Context, oid uint32) (string, error)
 		return "", fmt.Errorf("query FindOIDName: %w", err)
 	}
 
-	return pgx.CollectExactlyOneRow(rows, func(row pgx.CollectableRow) (string, error) {
+	return pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (string, error) {
   var item string
 		if err := row.Scan(&item,
 			); err != nil {
